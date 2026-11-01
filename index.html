@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Inglés Diario">
+<title>Inglés Diario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;800&family=Overpass+Mono:wght@500;700&display=swap">
+<style>
+  /* Layout: one study card in a single column. Rank shown as a highway mile marker, green sign + sign-yellow highlighter on the target word. */
+  :root {
+    --bg: #EDF0EC;
+    --surface: #FFFFFF;
+    --fg: #13201A;
+    --muted: #566860;
+    --line: #D2D9D3;
+    --accent: #0E6B46;
+    --accent-fg: #FFFFFF;
+    --sign: #0E6B46;
+    --sign-fg: #FFFFFF;
+    --mark: #FFD84D;
+    --mark-fg: #1B1600;
+    --rec: #B3261E;
+    --rec-fg: #FFFFFF;
+    --again: #B3261E;
+    --hard: #94560A;
+    --good: #0E6B46;
+    --easy: #1F5FA8;
+    --font-ui: 'Overpass', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'Overpass Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0D1511; --surface: #16211B; --fg: #E6EEE8; --muted: #93A69B; --line: #26352C;
+      --accent: #46C98C; --accent-fg: #08150F; --sign: #0E6B46; --sign-fg: #FFFFFF;
+      --mark: #E8C230; --mark-fg: #1B1600;
+      --rec: #FF8A80; --rec-fg: #2A0A07;
+      --again: #FF8A80; --hard: #F0B35A; --good: #46C98C; --easy: #7DB4F0;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0D1511; --surface: #16211B; --fg: #E6EEE8; --muted: #93A69B; --line: #26352C;
+    --accent: #46C98C; --accent-fg: #08150F; --sign: #0E6B46; --sign-fg: #FFFFFF;
+    --mark: #E8C230; --mark-fg: #1B1600;
+    --rec: #FF8A80; --rec-fg: #2A0A07;
+    --again: #FF8A80; --hard: #F0B35A; --good: #46C98C; --easy: #7DB4F0;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-ui);
+    font-size: 16px;
+    line-height: 1.45;
+    padding-block: 12px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+  /* Header */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1 { margin: 0; font-size: 1.15rem; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; }
+  h1 span { color: var(--accent); }
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--surface); display: grid; place-items: center;
+  }
+  .icon-btn[aria-expanded="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+  .counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .count { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .count b { display: block; font-family: var(--font-mono); font-size: 1.4rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .count small { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  .count.n b { color: var(--easy); }
+  .count.l b { color: var(--hard); }
+  .count.r b { color: var(--good); }
+
+  .progress { display: flex; flex-direction: column; gap: 6px; }
+  .progress-line { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 20px; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .marker {
+    display: inline-flex; align-items: baseline; gap: 8px; background: var(--sign); color: var(--sign-fg);
+    border-radius: 8px; padding: 5px 12px 6px; outline: 2px solid var(--sign-fg); outline-offset: -5px;
+    box-shadow: 0 0 0 1px var(--sign);
+  }
+  .marker small { font-size: .68rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+  .marker b { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+
+  .audio { display: flex; align-items: center; justify-content: center; gap: 16px; }
+  .play {
+    width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-fg);
+    display: grid; place-items: center; position: relative;
+  }
+  .play.on::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid var(--accent); opacity: .5; animation: ring 1s ease-out infinite; }
+  @keyframes ring { from { transform: scale(.92); opacity: .6; } to { transform: scale(1.12); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .play.on::after { animation: none; } .bar i { transition: none; } }
+  .slow {
+    height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: transparent;
+    font-weight: 600; font-size: .9rem; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .audio-note { margin: -8px 0 0; text-align: center; font-size: .8rem; color: var(--muted); }
+
+  .sentence { margin: 0; font-size: clamp(1.45rem, 5.4vw, 1.9rem); line-height: 1.38; font-weight: 500; text-align: center; text-wrap: balance; }
+  .sentence mark { background: var(--mark); color: var(--mark-fg); padding: 0 .18em; border-radius: 4px; font-weight: 800; }
+
+  .answer { border-top: 1px dashed var(--line); padding-top: 16px; display: flex; flex-direction: column; gap: 8px; text-align: center; }
+  .wt { margin: 0; font-size: 1.05rem; color: var(--muted); }
+  .wt b { color: var(--fg); font-weight: 800; }
+  .wt strong { color: var(--accent); font-size: 1.25rem; font-weight: 800; }
+  .es { margin: 0; font-size: 1.2rem; line-height: 1.4; text-wrap: balance; }
+
+  /* Actions */
+  .reveal {
+    width: 100%; min-height: 56px; border-radius: 14px; border: 2px solid var(--accent); background: transparent; color: var(--accent);
+    font-weight: 800; font-size: 1.05rem; letter-spacing: .02em;
+  }
+  .reveal:hover { background: var(--accent); color: var(--accent-fg); }
+  .rates { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .rate {
+    --c: var(--good); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    min-height: 62px; padding: 8px 4px; border-radius: 12px; border: 2px solid var(--c); background: var(--surface); color: var(--c);
+  }
+  .rate:hover { background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
+  .rate.again { --c: var(--again); } .rate.hard { --c: var(--hard); } .rate.good { --c: var(--good); } .rate.easy { --c: var(--easy); }
+  .rl { font-weight: 800; font-size: .95rem; }
+  .ri { font-family: var(--font-mono); font-size: .72rem; font-weight: 500; color: var(--muted); }
+  @media (max-width: 360px) { .rates { grid-template-columns: repeat(2, 1fr); } }
+  .hint { text-align: center; font-size: .75rem; color: var(--muted); margin: 0; }
+
+  /* Voice practice */
+  .mic {
+    width: 100%; min-height: 64px; border-radius: 14px; border: 0; background: var(--accent); color: var(--accent-fg);
+    display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 1.1rem;
+  }
+  .mic.rec { background: var(--rec); color: var(--rec-fg); }
+  .mic.rec svg { animation: blink 1s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { .mic.rec svg { animation: none; } }
+  .link { background: none; border: 0; color: var(--muted); text-decoration: underline; min-height: 44px; width: 100%; font-size: .9rem; margin-top: 4px; }
+  .speech { display: flex; flex-direction: column; gap: 10px; text-align: center; align-items: center; border-top: 1px dashed var(--line); padding-top: 16px; }
+  .heard { margin: 0; color: var(--muted); font-style: italic; overflow-wrap: anywhere; }
+  .score { display: flex; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .score b { font-family: var(--font-mono); font-size: 2.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .score.pass b { color: var(--good); } .score.mid b { color: var(--hard); } .score.low b { color: var(--again); }
+  .score span { font-weight: 600; }
+  .fb { margin: 0; font-size: 1.15rem; line-height: 1.7; text-wrap: balance; }
+  .fb .ok { color: var(--good); font-weight: 600; }
+  .fb .near { color: var(--hard); font-weight: 600; text-decoration: underline wavy; text-underline-offset: 4px; }
+  .fb .miss { color: var(--again); font-weight: 600; text-decoration: line-through; }
+
+  /* Done */
+  .done { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 28px 20px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .done h2 { margin: 0; font-size: 1.5rem; font-weight: 800; }
+  .done p { margin: 0; color: var(--muted); max-width: 38ch; }
+  .btn { min-height: 48px; padding: 0 20px; border-radius: 12px; border: 2px solid var(--accent); background: var(--accent); color: var(--accent-fg); font-weight: 800; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.danger { background: transparent; color: var(--again); border-color: var(--again); }
+
+  /* Settings */
+  .settings { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 20px; }
+  .settings h2 { margin: 0; font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 800; }
+  .field { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .field label, .field .lbl { font-weight: 600; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pill[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); height: 32px; }
+  .big { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  select, textarea { width: 100%; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); padding: 8px 10px; }
+  textarea { min-height: 84px; font-family: var(--font-mono); font-size: .75rem; resize: vertical; }
+  .check { display: flex; gap: 10px; align-items: center; min-height: 44px; }
+  .check input { width: 22px; height: 22px; accent-color: var(--accent); }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stats div { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+  .stats b { font-family: var(--font-mono); font-size: 1.2rem; display: block; font-variant-numeric: tabular-nums; }
+  .stats small { color: var(--muted); font-size: .75rem; }
+  .small { font-size: .8rem; color: var(--muted); margin: 0; }
+  .sep { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+  html, body { margin: 0; }
+  #actions { display: flex; flex-direction: column; gap: 10px; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+  .card-top { flex-wrap: wrap; }
+  .chip { max-width: 100%; overflow-wrap: anywhere; }
+  .sentence { font-size: clamp(1.6rem, 6vw, 2.1rem); }
+  input[type="text"] { width: 100%; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); padding: 8px 10px; font-size: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Inglés <span>diario</span></h1>
+    <button class="icon-btn" id="gear" aria-expanded="false" aria-controls="settings" aria-label="Ajustes">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </header>
+
+  <section class="settings" id="settings" hidden>
+    <div class="field">
+      <h2>Nivel</h2>
+      <div class="chips" id="lvlChips"></div>
+    </div>
+    <div class="field">
+      <h2>Frases a practicar</h2>
+      <div class="row"><span class="big" id="nOut">50</span><span class="small" id="nOf"></span></div>
+      <input type="range" id="nRange" min="5" max="100" step="5" value="50" aria-label="Cantidad de frases a practicar">
+      <div class="chips" id="nChips"></div>
+      <p class="small">Las frases salen en orden aleatorio, siempre el mismo para ti.</p>
+    </div>
+    <div class="field">
+      <h2>Frases nuevas por día</h2>
+      <div class="chips" id="dayChips"></div>
+    </div>
+    <div class="field">
+      <h2>Tarjeta</h2>
+      <label class="check" for="showCat"><input type="checkbox" id="showCat"> Mostrar la categoría de la frase (es una pista)</label>
+    </div>
+    <hr class="sep">
+    <div class="field">
+      <h2>Audio</h2>
+      <label for="voice" class="lbl">Voz en inglés de Estados Unidos</label>
+      <select id="voice"></select>
+      <p class="small" id="voiceNote"></p>
+      <label class="check" for="auto"><input type="checkbox" id="auto"> Reproducir el audio al mostrar cada tarjeta</label>
+    </div>
+    <hr class="sep">
+    <div class="field">
+      <h2>Pronunciación</h2>
+      <label class="check" for="req"><input type="checkbox" id="req"> Decir la frase en voz alta para ver la traducción</label>
+      <span class="lbl">Porcentaje mínimo para desbloquear</span>
+      <div class="chips" id="thrChips"></div>
+      <p class="small" id="micNote"></p>
+    </div>
+    <hr class="sep">
+    <div class="field">
+      <h2>Conexión con tu hoja</h2>
+      <p class="small">Opcional. Pega la dirección de tu aplicación web de Apps Script seguida de <b>?key=</b> y tu clave. Así tus frases se leen de tu hoja y tu progreso se guarda en tu cuenta de Google.</p>
+      <label for="connIn" class="small">Dirección con clave</label>
+      <input type="text" id="connIn" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec?key=…">
+      <div class="row">
+        <button class="btn" id="connSave">Guardar y probar</button>
+        <button class="btn ghost" id="connOff">Desconectar</button>
+      </div>
+      <p class="small" id="connNote" aria-live="polite"></p>
+      <p class="small" id="sheetNote"></p>
+    </div>
+    <hr class="sep">
+    <div class="field">
+      <h2>Tu progreso</h2>
+      <div class="stats" id="stats"></div>
+      <p class="small" id="storeNote"></p>
+      <p class="small" id="syncNote" aria-live="polite"></p>
+      <div class="row">
+        <button class="btn ghost" id="copyBtn">Copiar progreso</button>
+        <button class="btn ghost" id="restoreBtn">Restaurar</button>
+        <button class="btn danger" id="resetBtn">Borrar todo</button>
+      </div>
+      <label for="backup" class="small">Pega aquí el progreso copiado para restaurarlo</label>
+      <textarea id="backup" spellcheck="false" placeholder="{...}"></textarea>
+      <p class="small" id="backupMsg" aria-live="polite"></p>
+      <p class="small">Para usarla como una app en el iPhone: en Safari toca Compartir y luego "Añadir a pantalla de inicio".</p>
+    </div>
+  </section>
+
+  <div class="counts" aria-label="Tarjetas de hoy">
+    <div class="count n"><b id="cNew">0</b><small>Nuevas</small></div>
+    <div class="count l"><b id="cLearn">0</b><small>Aprendiendo</small></div>
+    <div class="count r"><b id="cRev">0</b><small>Repasar</small></div>
+  </div>
+
+  <div class="progress">
+    <div class="progress-line"><span id="pLabel"></span><span id="pPct"></span></div>
+    <div class="bar"><i id="pBar"></i></div>
+  </div>
+
+  <p class="hint" id="loading">Leyendo tus frases…</p>
+
+  <section id="study" hidden>
+    <div class="card" id="card">
+      <div class="card-top">
+        <span class="marker"><small>Nivel</small><b id="lvl">A1</b></span>
+        <span class="tags"><span class="chip" id="catChip" hidden></span><span class="chip" id="stateChip">Nueva</span></span>
+      </div>
+      <div class="audio">
+        <button class="play" id="play" aria-label="Escuchar la frase">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M16.5 12a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/><path d="M14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+        </button>
+        <button class="slow" id="slow" aria-label="Escuchar la frase despacio">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 12h4M9 12h2M13 12h1"/><path d="M17 6l5 6-5 6" /></svg>
+          Despacio
+        </button>
+      </div>
+      <p class="audio-note" id="audioNote" hidden></p>
+      <p class="sentence" id="sentence" lang="en-US"></p>
+      <div class="speech" id="speech" hidden aria-live="polite">
+        <p class="heard" id="heard"></p>
+        <div class="score" id="score" hidden><b id="pct">0%</b><span id="verdict"></span></div>
+        <p class="fb" id="fb" lang="en-US" hidden></p>
+        <p class="small" id="legend" hidden>Verde: bien dicha · Ámbar con onda: casi · Rojo tachado: no se entendió</p>
+      </div>
+      <div class="answer" id="answer" hidden>
+        <p class="es" id="es"></p>
+      </div>
+    </div>
+    <div id="actions" style="margin-top:14px"></div>
+    <p class="hint" id="hint" style="margin-top:10px"></p>
+  </section>
+
+  <section class="done" id="done" hidden></section>
+</div>
+
+<script>
+/*SCHED-START*/
+var STEPS = [1, 10];
+var MIN = 60000;
+function dayStart(now, d) { var t = new Date(now); t.setHours(0, 0, 0, 0); t.setDate(t.getDate() + d); return t.getTime(); }
+function newCard(r) { return { r: r, st: 'N', step: 0, ivl: 0, ef: 2.5, due: 0, lapses: 0, reps: 0 }; }
+function sched(c, q, now) {
+  var o = Object.assign({}, c); o.reps = (c.reps || 0) + 1;
+  if (c.st === 'N' || c.st === 'L') {
+    var step = c.st === 'N' ? 0 : c.step;
+    var grad = function (easy) {
+      var base = c.ivl > 0 ? Math.max(1, Math.round(c.ivl * 0.5)) : 1;
+      var d = easy ? Math.max(base + 3, 4) : base;
+      o.st = 'R'; o.ivl = d; o.step = 0; o.due = dayStart(now, d); return o;
+    };
+    if (q === 1) { o.st = 'L'; o.step = 0; o.due = now + STEPS[0] * MIN; return o; }
+    if (q === 2) { o.st = 'L'; o.step = step; o.due = now + (step === 0 ? (STEPS[0] + STEPS[1]) / 2 : STEPS[step]) * MIN; return o; }
+    if (q === 3) {
+      if (step + 1 < STEPS.length) { o.st = 'L'; o.step = step + 1; o.due = now + STEPS[step + 1] * MIN; return o; }
+      return grad(false);
+    }
+    return grad(true);
+  }
+  var ivl = c.ivl, ef = c.ef;
+  if (q === 1) { o.st = 'L'; o.step = 0; o.lapses = (c.lapses || 0) + 1; o.ef = Math.max(1.3, ef - 0.2); o.due = now + STEPS[0] * MIN; return o; }
+  var hard = Math.max(ivl + 1, Math.round(ivl * 1.2));
+  var good = Math.max(hard + 1, Math.round(ivl * ef));
+  var easy = Math.max(good + 1, Math.round(ivl * ef * 1.3));
+  if (q === 2) { o.ivl = hard; o.ef = Math.max(1.3, ef - 0.15); }
+  else if (q === 3) { o.ivl = good; }
+  else { o.ivl = easy; o.ef = ef + 0.15; }
+  o.due = dayStart(now, o.ivl); return o;
+}
+function fmtPreview(o, now) {
+  if (o.st === 'L') {
+    var m = Math.round((o.due - now) / MIN);
+    return m + ' min';
+  }
+  var d = o.ivl;
+  if (d < 30) return d + (d === 1 ? ' día' : ' días');
+  if (d < 365) { var mo = (d / 30); return (Math.round(mo * 10) / 10).toString().replace('.0', '') + ' mes'; }
+  return (Math.round(d / 36.5) / 10).toString().replace('.0', '') + ' años';
+}
+/*SCHED-END*/
+/*SCORE-START*/
+var HOMO = {};
+('to too two|their there|write right|by buy bye|no know|one won|i eye aye|be bee|see sea|hour our|meet meat|week weak|wait weight|sun son|night knight|four for fore|eight ate|whole hole|would wood|so sew|plane plain|flower flour|hear here|tea tee|dear deer|pair pear|wear where|weather whether|which witch|mail male|bored board|peace piece|steal steel|tail tale|new knew|red read|sale sail|road rode|break brake|cell sell|cent scent sent|die dye|fair fare|flew flu|hair hare|heal heel|higher hire|in inn|knot not|made maid|main mane|none nun|pale pail|rain reign|role roll|root route|sight site|some sum|stair stare|stake steak|threw through|waist waste|way weigh|allowed aloud|bare bear|beat beet|blew blue|course coarse|dew due|ok okay|the thee|a uh').split('|').forEach(function (g, i) {
+  g.split(' ').forEach(function (w) { HOMO[w] = 'g' + i; });
+});
+var CONTR = {"i'm":"i am","you're":"you are","we're":"we are","they're":"they are","i'll":"i will","you'll":"you will","he'll":"he will","she'll":"she will","it'll":"it will","we'll":"we will","they'll":"they will","i've":"i have","you've":"you have","we've":"we have","they've":"they have","i'd":"i would","you'd":"you would","he'd":"he would","she'd":"she would","we'd":"we would","they'd":"they would","don't":"do not","doesn't":"does not","didn't":"did not","can't":"can not","cannot":"can not","won't":"will not","isn't":"is not","aren't":"are not","wasn't":"was not","weren't":"were not","haven't":"have not","hasn't":"has not","hadn't":"had not","wouldn't":"would not","couldn't":"could not","shouldn't":"should not","let's":"let us","he's":"he is","she's":"she is","it's":"it is","that's":"that is","there's":"there is","here's":"here is","what's":"what is","who's":"who is","where's":"where is","how's":"how is","gonna":"going to","wanna":"want to","gotta":"got to"};
+var ONES = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+var TENS = ['', '', 'twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+function numWords(n) {
+  if (n < 20) return ONES[n];
+  if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? ' ' + ONES[n % 10] : '');
+  return ONES[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' ' + numWords(n % 100) : '');
+}
+function toks(w) {
+  var s = String(w).toLowerCase().replace(/[’‘`]/g, "'").replace(/[-–—_]/g, ' ');
+  var out = [];
+  s.split(/\s+/).forEach(function (p) {
+    p = p.replace(/[^a-z0-9']/g, '').replace(/^'+|'+$/g, '');
+    if (!p) return;
+    if (/^\d+$/.test(p) && +p < 1000) { out = out.concat(numWords(+p).split(' ')); return; }
+    if (CONTR[p]) { out = out.concat(CONTR[p].split(' ')); return; }
+    out.push(p);
+  });
+  return out;
+}
+function lev(a, b) {
+  var m = a.length, n = b.length, d = [], i, j;
+  for (i = 0; i <= m; i++) { d[i] = [i]; }
+  for (j = 1; j <= n; j++) d[0][j] = j;
+  for (i = 1; i <= m; i++) for (j = 1; j <= n; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[m][n];
+}
+function wordSim(a, b) {
+  if (a === b) return 1;
+  if (HOMO[a] && HOMO[a] === HOMO[b]) return 1;
+  var s = 1 - lev(a, b) / Math.max(a.length, b.length);
+  return s >= 0.75 ? s : 0;
+}
+function scoreSpeech(target, heard) {
+  var disp = String(target).split(/\s+/).filter(Boolean), T = [], owner = [];
+  disp.forEach(function (w, i) { toks(w).forEach(function (t) { T.push(t); owner.push(i); }); });
+  var H = toks(heard), n = T.length, m = H.length, i, j;
+  if (!n) return { pct: 0, words: [], extras: 0 };
+  var S = [], dp = [];
+  for (i = 0; i <= n; i++) { dp[i] = []; S[i] = []; for (j = 0; j <= m; j++) { dp[i][j] = 0; S[i][j] = 0; } }
+  for (i = 1; i <= n; i++) for (j = 1; j <= m; j++) S[i][j] = wordSim(T[i - 1], H[j - 1]);
+  for (i = 0; i <= n; i++) dp[i][0] = i;
+  for (j = 0; j <= m; j++) dp[0][j] = j;
+  var sub = function (i, j) { return S[i][j] > 0 ? 1 - S[i][j] : 1; };
+  for (i = 1; i <= n; i++) for (j = 1; j <= m; j++)
+    dp[i][j] = Math.min(dp[i - 1][j - 1] + sub(i, j), dp[i - 1][j] + 1, dp[i][j - 1] + 1);
+  var credits = []; for (i = 0; i < n; i++) credits.push(0);
+  var extras = 0; i = n; j = m;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && Math.abs(dp[i][j] - (dp[i - 1][j - 1] + sub(i, j))) < 1e-9) { credits[i - 1] = S[i][j]; i--; j--; }
+    else if (i > 0 && Math.abs(dp[i][j] - (dp[i - 1][j] + 1)) < 1e-9) { i--; }
+    else { extras++; j--; }
+  }
+  var sum = 0; credits.forEach(function (c) { sum += c; });
+  var pct = Math.max(0, Math.min(100, Math.round((sum - 0.5 * extras) / n * 100)));
+  var per = disp.map(function () { return []; });
+  credits.forEach(function (c, k) { per[owner[k]].push(c); });
+  var words = disp.map(function (w, k) {
+    var a = per[k].length ? per[k].reduce(function (x, y) { return x + y; }, 0) / per[k].length : 0;
+    return { t: w, c: a > 0.999 ? 'ok' : a > 0 ? 'near' : 'miss' };
+  });
+  return { pct: pct, words: words, extras: extras };
+}
+/*SCORE-END*/
+</script>
+
+<script>
+(function () {
+  var KEY = 'ingles-diario:v2', CONN_KEY = 'ingles-diario:conn', CACHE_KEY = 'ingles-diario:phrases';
+  var EMBED = [["A1","Saludos y despedidas","Hello.","Hola."],["A1","Saludos y despedidas","Hi!","¡Hola!"],["A1","Saludos y despedidas","Hey, what's up?","Oye, ¿qué tal?"],["A1","Saludos y despedidas","Good morning.","Buenos días."],["A1","Saludos y despedidas","Good afternoon.","Buenas tardes."],["A1","Saludos y despedidas","Good evening.","Buenas noches."],["A1","Saludos y despedidas","Good night.","Buenas noches, que descanses."],["A1","Saludos y despedidas","How are you?","¿Cómo estás?"],["A1","Saludos y despedidas","How are you doing?","¿Cómo te va?"],["A1","Saludos y despedidas","I'm fine, thanks.","Estoy bien, gracias."],["A1","Saludos y despedidas","I'm good, and you?","Estoy bien, ¿y tú?"],["A1","Saludos y despedidas","Not bad.","No está mal."],["A1","Saludos y despedidas","Nice to meet you.","Mucho gusto."],["A1","Saludos y despedidas","Nice to meet you too.","Igualmente, mucho gusto."],["A1","Saludos y despedidas","Good to see you.","Qué bueno verte."],["A1","Saludos y despedidas","See you later.","Nos vemos luego."],["A1","Saludos y despedidas","See you tomorrow.","Nos vemos mañana."],["A1","Saludos y despedidas","Goodbye.","Adiós."],["A1","Saludos y despedidas","Take care.","Cuídate."],["A1","Saludos y despedidas","Have a nice day.","Que tengas un buen día."],["A1","Saludos y despedidas","You too.","Igualmente."],["A1","Saludos y despedidas","See you soon.","Hasta pronto."],["A1","Presentarse","What's your name?","¿Cómo te llamas?"],["A1","Presentarse","My name is Ana.","Me llamo Ana."],["A1","Presentarse","I'm Carlos.","Soy Carlos."],["A1","Presentarse","Where are you from?","¿De dónde eres?"],["A1","Presentarse","I'm from Argentina.","Soy de Argentina."],["A1","Presentarse","I live in Argentina.","Vivo en Argentina."],["A1","Presentarse","I speak Spanish.","Hablo español."],["A1","Presentarse","I'm learning English.","Estoy aprendiendo inglés."],["A1","Presentarse","How old are you?","¿Cuántos años tienes?"],["A1","Presentarse","I'm thirty years old.","Tengo treinta años."],["A1","Presentarse","What do you do?","¿A qué te dedicas?"],["A1","Presentarse","I'm a student.","Soy estudiante."],["A1","Presentarse","I'm a teacher.","Soy profesor."],["A1","Presentarse","Are you married?","¿Estás casado?"],["A1","Presentarse","I'm single.","Estoy soltero."],["A1","Presentarse","I have two kids.","Tengo dos hijos."],["A1","Presentarse","This is my friend.","Este es mi amigo."],["A1","Presentarse","This is my wife.","Esta es mi esposa."],["A1","Presentarse","What's your last name?","¿Cuál es tu apellido?"],["A1","Presentarse","How do you spell that?","¿Cómo se deletrea eso?"],["A1","Presentarse","Can I have your number?","¿Me das tu número?"],["A1","Cortesía","Please.","Por favor."],["A1","Cortesía","Thank you.","Gracias."],["A1","Cortesía","Thanks a lot.","Muchas gracias."],["A1","Cortesía","You're welcome.","De nada."],["A1","Cortesía","No problem.","No hay problema."],["A1","Cortesía","Excuse me.","Con permiso."],["A1","Cortesía","I'm sorry.","Lo siento."],["A1","Cortesía","Sorry, my fault.","Perdón, fue mi culpa."],["A1","Cortesía","That's okay.","Está bien."],["A1","Cortesía","Don't worry about it.","No te preocupes."],["A1","Cortesía","After you.","Después de ti."],["A1","Cortesía","Can I help you?","¿Puedo ayudarte?"],["A1","Cortesía","Yes, please.","Sí, por favor."],["A1","Cortesía","No, thank you.","No, gracias."],["A1","Cortesía","Thank you for your help.","Gracias por tu ayuda."],["A1","Cortesía","Bless you.","Salud."],["A1","Cortesía","Congratulations!","¡Felicitaciones!"],["A1","Cortesía","Happy birthday!","¡Feliz cumpleaños!"],["A1","Cortesía","Welcome!","¡Bienvenido!"],["A1","Cortesía","Excuse me, can I pass?","Con permiso, ¿puedo pasar?"],["A1","Preguntas básicas","What is this?","¿Qué es esto?"],["A1","Preguntas básicas","What time is it?","¿Qué hora es?"],["A1","Preguntas básicas","What day is it today?","¿Qué día es hoy?"],["A1","Preguntas básicas","Where is the bathroom?","¿Dónde está el baño?"],["A1","Preguntas básicas","Where are you?","¿Dónde estás?"],["A1","Preguntas básicas","Where do you live?","¿Dónde vives?"],["A1","Preguntas básicas","When does it start?","¿Cuándo empieza?"],["A1","Preguntas básicas","Who is that?","¿Quién es ese?"],["A1","Preguntas básicas","Why not?","¿Por qué no?"],["A1","Preguntas básicas","How much is it?","¿Cuánto cuesta?"],["A1","Preguntas básicas","How many?","¿Cuántos?"],["A1","Preguntas básicas","How do you say this in English?","¿Cómo se dice esto en inglés?"],["A1","Preguntas básicas","What does this mean?","¿Qué significa esto?"],["A1","Preguntas básicas","Is this seat taken?","¿Está ocupado este asiento?"],["A1","Preguntas básicas","Is it far?","¿Está lejos?"],["A1","Preguntas básicas","Do you speak Spanish?","¿Hablas español?"],["A1","Preguntas básicas","Do you have a pen?","¿Tienes un bolígrafo?"],["A1","Preguntas básicas","Can I ask a question?","¿Puedo hacer una pregunta?"],["A1","Preguntas básicas","Are you okay?","¿Estás bien?"],["A1","Preguntas básicas","What do you want?","¿Qué quieres?"],["A1","Preguntas básicas","What are you doing?","¿Qué estás haciendo?"],["A1","Preguntas básicas","What's the matter?","¿Qué pasa?"],["A1","Preguntas básicas","What's your favorite color?","¿Cuál es tu color favorito?"],["A1","Preguntas básicas","Which one is yours?","¿Cuál es el tuyo?"],["A1","Preguntas básicas","Whose bag is this?","¿De quién es esta mochila?"],["A1","Preguntas básicas","Can you help me?","¿Puedes ayudarme?"],["A1","Preguntas básicas","Do you have time?","¿Tienes tiempo?"],["A1","Preguntas básicas","How long does it take?","¿Cuánto tarda?"],["A1","Preguntas básicas","Is anyone here?","¿Hay alguien aquí?"],["A1","Preguntas básicas","Is there a store near here?","¿Hay una tienda cerca de aquí?"],["A1","No entiendo y pedir ayuda","I don't understand.","No entiendo."],["A1","No entiendo y pedir ayuda","I understand.","Entiendo."],["A1","No entiendo y pedir ayuda","I don't know.","No sé."],["A1","No entiendo y pedir ayuda","Can you repeat that?","¿Puedes repetir eso?"],["A1","No entiendo y pedir ayuda","Say that again, please.","Dilo otra vez, por favor."],["A1","No entiendo y pedir ayuda","Speak slowly, please.","Habla despacio, por favor."],["A1","No entiendo y pedir ayuda","Do you speak English?","¿Hablas inglés?"],["A1","No entiendo y pedir ayuda","I speak a little English.","Hablo un poco de inglés."],["A1","No entiendo y pedir ayuda","What did you say?","¿Qué dijiste?"],["A1","No entiendo y pedir ayuda","Sorry, I didn't hear you.","Perdón, no te oí."],["A1","No entiendo y pedir ayuda","I need help.","Necesito ayuda."],["A1","No entiendo y pedir ayuda","Can you write it down?","¿Puedes escribirlo?"],["A1","No entiendo y pedir ayuda","Can you show me?","¿Puedes mostrármelo?"],["A1","No entiendo y pedir ayuda","I'm lost.","Estoy perdido."],["A1","No entiendo y pedir ayuda","I forgot.","Se me olvidó."],["A1","No entiendo y pedir ayuda","I remember.","Me acuerdo."],["A1","No entiendo y pedir ayuda","Wait a minute, please.","Espera un minuto, por favor."],["A1","No entiendo y pedir ayuda","Just a moment.","Un momento."],["A1","No entiendo y pedir ayuda","Let me think.","Déjame pensar."],["A1","No entiendo y pedir ayuda","I think so.","Creo que sí."],["A1","Números, hora y días","It's two o'clock.","Son las dos en punto."],["A1","Números, hora y días","It's half past three.","Son las tres y media."],["A1","Números, hora y días","It's a quarter to five.","Son las cinco menos cuarto."],["A1","Números, hora y días","It's noon.","Es mediodía."],["A1","Números, hora y días","Today is Monday.","Hoy es lunes."],["A1","Números, hora y días","Tomorrow is Tuesday.","Mañana es martes."],["A1","Números, hora y días","Yesterday was Sunday.","Ayer fue domingo."],["A1","Números, hora y días","My birthday is in May.","Mi cumpleaños es en mayo."],["A1","Números, hora y días","The meeting is at ten.","La reunión es a las diez."],["A1","Números, hora y días","I have five dollars.","Tengo cinco dólares."],["A1","Números, hora y días","It costs twenty dollars.","Cuesta veinte dólares."],["A1","Números, hora y días","My number is five five five, one two three four.","Mi número es cinco cinco cinco, uno dos tres cuatro."],["A1","Números, hora y días","See you on Friday.","Nos vemos el viernes."],["A1","Números, hora y días","Every day.","Todos los días."],["A1","Números, hora y días","Once a week.","Una vez por semana."],["A1","Números, hora y días","This weekend.","Este fin de semana."],["A1","Números, hora y días","Next week.","La próxima semana."],["A1","Números, hora y días","Right now.","Ahora mismo."],["A1","Familia","This is my family.","Esta es mi familia."],["A1","Familia","I have a brother and a sister.","Tengo un hermano y una hermana."],["A1","Familia","My mother is a nurse.","Mi mamá es enfermera."],["A1","Familia","My father works downtown.","Mi papá trabaja en el centro."],["A1","Familia","My parents live in Cordoba.","Mis padres viven en Córdoba."],["A1","Familia","She is my daughter.","Ella es mi hija."],["A1","Familia","He is my son.","Él es mi hijo."],["A1","Familia","Do you have any kids?","¿Tienes hijos?"],["A1","Familia","Do you have brothers or sisters?","¿Tienes hermanos?"],["A1","Familia","My grandmother is eighty years old.","Mi abuela tiene ochenta años."],["A1","Familia","He is my best friend.","Él es mi mejor amigo."],["A1","Familia","We are a big family.","Somos una familia grande."],["A1","Familia","My husband is at work.","Mi esposo está en el trabajo."],["A1","Familia","How is your family?","¿Cómo está tu familia?"],["A1","Familia","My cousin lives nearby.","Mi primo vive cerca."],["A1","Comida y restaurante","I'm hungry.","Tengo hambre."],["A1","Comida y restaurante","I'm thirsty.","Tengo sed."],["A1","Comida y restaurante","Let's eat.","Comamos."],["A1","Comida y restaurante","What's for dinner?","¿Qué hay para cenar?"],["A1","Comida y restaurante","A table for two, please.","Una mesa para dos, por favor."],["A1","Comida y restaurante","Can I see the menu?","¿Puedo ver el menú?"],["A1","Comida y restaurante","I'd like a coffee, please.","Quisiera un café, por favor."],["A1","Comida y restaurante","I'll have the chicken.","Voy a pedir el pollo."],["A1","Comida y restaurante","Can I have some water?","¿Me da un poco de agua?"],["A1","Comida y restaurante","What do you recommend?","¿Qué recomienda?"],["A1","Comida y restaurante","Does it have meat?","¿Tiene carne?"],["A1","Comida y restaurante","I'm vegetarian.","Soy vegetariano."],["A1","Comida y restaurante","No onions, please.","Sin cebolla, por favor."],["A1","Comida y restaurante","It's delicious.","Está delicioso."],["A1","Comida y restaurante","It's too hot.","Está muy caliente."],["A1","Comida y restaurante","Can I have the check, please?","¿Me trae la cuenta, por favor?"],["A1","Comida y restaurante","Is the tip included?","¿La propina está incluida?"],["A1","Comida y restaurante","For here or to go?","¿Para comer aquí o para llevar?"],["A1","Comida y restaurante","To go, please.","Para llevar, por favor."],["A1","Comida y restaurante","I'm full.","Estoy lleno."],["A1","Comida y restaurante","Another one, please.","Otro, por favor."],["A1","Comida y restaurante","Can I pay by card?","¿Puedo pagar con tarjeta?"],["A1","Comida y restaurante","I like pizza.","Me gusta la pizza."],["A1","Comida y restaurante","Breakfast is at eight.","El desayuno es a las ocho."],["A1","Comida y restaurante","Do you have any dessert?","¿Tienen postre?"],["A1","Compras y dinero","How much is this?","¿Cuánto cuesta esto?"],["A1","Compras y dinero","It's too expensive.","Es muy caro."],["A1","Compras y dinero","Do you have a smaller size?","¿Tiene una talla más pequeña?"],["A1","Compras y dinero","Can I try it on?","¿Puedo probármelo?"],["A1","Compras y dinero","I'll take it.","Me lo llevo."],["A1","Compras y dinero","I'm just looking.","Solo estoy mirando."],["A1","Compras y dinero","Where can I pay?","¿Dónde puedo pagar?"],["A1","Compras y dinero","Do you take credit cards?","¿Aceptan tarjetas de crédito?"],["A1","Compras y dinero","Do you have change?","¿Tiene cambio?"],["A1","Compras y dinero","Here's your change.","Aquí tiene su cambio."],["A1","Compras y dinero","Can I have a bag?","¿Me da una bolsa?"],["A1","Compras y dinero","Is there a discount?","¿Hay descuento?"],["A1","Compras y dinero","Where is the ATM?","¿Dónde está el cajero automático?"],["A1","Compras y dinero","I need to buy shoes.","Necesito comprar zapatos."],["A1","Compras y dinero","What time does the store open?","¿A qué hora abre la tienda?"],["A1","Compras y dinero","What time does it close?","¿A qué hora cierra?"],["A1","Compras y dinero","Do you have this in blue?","¿Lo tiene en azul?"],["A1","Compras y dinero","It's on sale.","Está en oferta."],["A1","Compras y dinero","Cash or card?","¿Efectivo o tarjeta?"],["A1","Compras y dinero","Keep the change.","Quédese con el cambio."],["A1","Compras y dinero","I need a receipt.","Necesito un recibo."],["A1","Compras y dinero","It doesn't fit.","No me queda."],["A1","Compras y dinero","I want to return this.","Quiero devolver esto."],["A1","Compras y dinero","That's all, thanks.","Eso es todo, gracias."],["A1","Compras y dinero","This is a gift.","Esto es un regalo."],["A1","Direcciones y transporte","Where is the bus stop?","¿Dónde está la parada de autobús?"],["A1","Direcciones y transporte","How do I get to the station?","¿Cómo llego a la estación?"],["A1","Direcciones y transporte","Turn left.","Gira a la izquierda."],["A1","Direcciones y transporte","Turn right.","Gira a la derecha."],["A1","Direcciones y transporte","Go straight.","Sigue derecho."],["A1","Direcciones y transporte","It's on the corner.","Está en la esquina."],["A1","Direcciones y transporte","It's next to the bank.","Está al lado del banco."],["A1","Direcciones y transporte","It's across the street.","Está cruzando la calle."],["A1","Direcciones y transporte","It's about five minutes away.","Está a unos cinco minutos."],["A1","Direcciones y transporte","Can you show me on the map?","¿Puedes mostrarme en el mapa?"],["A1","Direcciones y transporte","Is this the right way?","¿Es este el camino correcto?"],["A1","Direcciones y transporte","Which bus goes downtown?","¿Qué autobús va al centro?"],["A1","Direcciones y transporte","One ticket, please.","Un boleto, por favor."],["A1","Direcciones y transporte","How much is the ticket?","¿Cuánto cuesta el boleto?"],["A1","Direcciones y transporte","Where does this train go?","¿A dónde va este tren?"],["A1","Direcciones y transporte","What time does the train leave?","¿A qué hora sale el tren?"],["A1","Direcciones y transporte","Does this bus stop at the airport?","¿Este autobús para en el aeropuerto?"],["A1","Direcciones y transporte","I need a taxi.","Necesito un taxi."],["A1","Direcciones y transporte","Please take me to this address.","Por favor, llévame a esta dirección."],["A1","Direcciones y transporte","Stop here, please.","Pare aquí, por favor."],["A1","Direcciones y transporte","I'm late.","Llego tarde."],["A1","Direcciones y transporte","I missed the bus.","Perdí el autobús."],["A1","Direcciones y transporte","Is it walking distance?","¿Se puede ir caminando?"],["A1","Direcciones y transporte","Where is the subway?","¿Dónde está el metro?"],["A1","Direcciones y transporte","Watch out!","¡Cuidado!"],["A1","En casa y rutina diaria","I wake up at seven.","Me despierto a las siete."],["A1","En casa y rutina diaria","I take a shower.","Me ducho."],["A1","En casa y rutina diaria","I brush my teeth.","Me lavo los dientes."],["A1","En casa y rutina diaria","I have breakfast.","Desayuno."],["A1","En casa y rutina diaria","I go to work by bus.","Voy al trabajo en autobús."],["A1","En casa y rutina diaria","I come home at six.","Llego a casa a las seis."],["A1","En casa y rutina diaria","I cook dinner.","Preparo la cena."],["A1","En casa y rutina diaria","I watch TV at night.","Veo televisión por la noche."],["A1","En casa y rutina diaria","I go to bed at eleven.","Me acuesto a las once."],["A1","En casa y rutina diaria","Turn on the light.","Enciende la luz."],["A1","En casa y rutina diaria","Turn off the TV.","Apaga la televisión."],["A1","En casa y rutina diaria","Close the door, please.","Cierra la puerta, por favor."],["A1","En casa y rutina diaria","Open the window.","Abre la ventana."],["A1","En casa y rutina diaria","I'm at home.","Estoy en casa."],["A1","En casa y rutina diaria","Come in.","Pasa."],["A1","En casa y rutina diaria","Make yourself at home.","Siéntete como en casa."],["A1","En casa y rutina diaria","I need to clean the house.","Tengo que limpiar la casa."],["A1","En casa y rutina diaria","Where are my keys?","¿Dónde están mis llaves?"],["A1","En casa y rutina diaria","I'm on my way.","Voy en camino."],["A1","En casa y rutina diaria","I'll be right back.","Vuelvo enseguida."],["A1","En casa y rutina diaria","I do the laundry on Sunday.","Lavo la ropa los domingos."],["A1","En casa y rutina diaria","The kitchen is clean.","La cocina está limpia."],["A1","En casa y rutina diaria","Let's go home.","Vámonos a casa."],["A1","En casa y rutina diaria","I'm tired.","Estoy cansado."],["A1","En casa y rutina diaria","I need to sleep.","Necesito dormir."],["A1","El clima","How's the weather?","¿Cómo está el clima?"],["A1","El clima","It's sunny.","Está soleado."],["A1","El clima","It's raining.","Está lloviendo."],["A1","El clima","It's cold today.","Hace frío hoy."],["A1","El clima","It's very hot.","Hace mucho calor."],["A1","El clima","It's cloudy.","Está nublado."],["A1","El clima","It's windy.","Hace viento."],["A1","El clima","It's snowing.","Está nevando."],["A1","El clima","It's a beautiful day.","Es un día hermoso."],["A1","El clima","Take an umbrella.","Lleva un paraguas."],["A1","El clima","It's going to rain tomorrow.","Va a llover mañana."],["A1","El clima","I like warm weather.","Me gusta el clima cálido."],["A1","Salud","I don't feel well.","No me siento bien."],["A1","Salud","I'm sick.","Estoy enfermo."],["A1","Salud","I have a headache.","Me duele la cabeza."],["A1","Salud","I have a stomachache.","Me duele el estómago."],["A1","Salud","I have a cold.","Tengo un resfriado."],["A1","Salud","I have a fever.","Tengo fiebre."],["A1","Salud","My back hurts.","Me duele la espalda."],["A1","Salud","I need a doctor.","Necesito un médico."],["A1","Salud","Where is the pharmacy?","¿Dónde está la farmacia?"],["A1","Salud","I need some medicine.","Necesito un medicamento."],["A1","Salud","I'm allergic to nuts.","Soy alérgico a las nueces."],["A1","Salud","I feel better.","Me siento mejor."],["A1","Salud","Get well soon.","Que te mejores pronto."],["A1","Salud","I need to rest.","Necesito descansar."],["A1","Salud","Drink some water.","Toma un poco de agua."],["A1","Salud","I have an appointment.","Tengo una cita."],["A1","Salud","Do you feel okay?","¿Te sientes bien?"],["A1","Gustos y opiniones","I like it.","Me gusta."],["A1","Gustos y opiniones","I love it.","Me encanta."],["A1","Gustos y opiniones","I don't like it.","No me gusta."],["A1","Gustos y opiniones","I like music.","Me gusta la música."],["A1","Gustos y opiniones","What do you like to do?","¿Qué te gusta hacer?"],["A1","Gustos y opiniones","I like to read books.","Me gusta leer libros."],["A1","Gustos y opiniones","I like to play soccer.","Me gusta jugar al fútbol."],["A1","Gustos y opiniones","What's your favorite food?","¿Cuál es tu comida favorita?"],["A1","Gustos y opiniones","It's very good.","Está muy bien."],["A1","Gustos y opiniones","It's not good.","No está bien."],["A1","Gustos y opiniones","That's great!","¡Qué bueno!"],["A1","Gustos y opiniones","That's interesting.","Eso es interesante."],["A1","Gustos y opiniones","That's funny.","Eso es gracioso."],["A1","Gustos y opiniones","I think it's nice.","Creo que está lindo."],["A1","Gustos y opiniones","I agree.","Estoy de acuerdo."],["A1","Gustos y opiniones","I don't agree.","No estoy de acuerdo."],["A1","Gustos y opiniones","Maybe.","Quizás."],["A1","Gustos y opiniones","I want to go.","Quiero ir."],["A1","Gustos y opiniones","I don't want to go.","No quiero ir."],["A1","Gustos y opiniones","I'm happy.","Estoy feliz."],["A1","Gustos y opiniones","I'm sad.","Estoy triste."],["A1","Gustos y opiniones","I'm excited.","Estoy emocionado."],["A1","Gustos y opiniones","I'm bored.","Estoy aburrido."],["A1","Gustos y opiniones","I'm busy.","Estoy ocupado."],["A1","Trabajo y estudio","I work in an office.","Trabajo en una oficina."],["A1","Trabajo y estudio","I work from home.","Trabajo desde casa."],["A1","Trabajo y estudio","I start work at nine.","Empiezo a trabajar a las nueve."],["A1","Trabajo y estudio","I have a meeting.","Tengo una reunión."],["A1","Trabajo y estudio","I'm a student at the university.","Soy estudiante en la universidad."],["A1","Trabajo y estudio","I have class today.","Hoy tengo clase."],["A1","Trabajo y estudio","I have homework.","Tengo tarea."],["A1","Trabajo y estudio","Where do you work?","¿Dónde trabajas?"],["A1","Trabajo y estudio","What do you study?","¿Qué estudias?"],["A1","Trabajo y estudio","I study English every day.","Estudio inglés todos los días."],["A1","Trabajo y estudio","Can I use your phone?","¿Puedo usar tu teléfono?"],["A1","Trabajo y estudio","I'm on a break.","Estoy en un descanso."],["A1","Trabajo y estudio","I finish at five.","Termino a las cinco."],["A1","Trabajo y estudio","My boss is nice.","Mi jefe es amable."],["A1","Trabajo y estudio","The test is tomorrow.","El examen es mañana."],["A1","Teléfono y mensajes","Hello, who is this?","Hola, ¿quién habla?"],["A1","Teléfono y mensajes","This is Maria.","Habla María."],["A1","Teléfono y mensajes","Can I speak to John?","¿Puedo hablar con John?"],["A1","Teléfono y mensajes","Hold on, please.","Espera un momento, por favor."],["A1","Teléfono y mensajes","I'll call you back.","Te vuelvo a llamar."],["A1","Teléfono y mensajes","Call me later.","Llámame más tarde."],["A1","Teléfono y mensajes","I'll send you a message.","Te enviaré un mensaje."],["A1","Teléfono y mensajes","What's your email?","¿Cuál es tu correo electrónico?"],["A1","Teléfono y mensajes","What's the Wi-Fi password?","¿Cuál es la contraseña del Wi-Fi?"],["A1","Teléfono y mensajes","My phone is dead.","Mi teléfono se quedó sin batería."],["A1","Teléfono y mensajes","I can't hear you.","No te escucho."],["A1","Teléfono y mensajes","Text me.","Escríbeme un mensaje."],["A1","Hotel y viajes","I have a reservation.","Tengo una reserva."],["A1","Hotel y viajes","I'd like a room for two nights.","Quisiera una habitación para dos noches."],["A1","Hotel y viajes","What time is check-out?","¿A qué hora es la salida?"],["A1","Hotel y viajes","Where is my gate?","¿Dónde está mi puerta de embarque?"],["A1","Hotel y viajes","Here is my passport.","Aquí está mi pasaporte."],["A1","Hotel y viajes","I'm here on vacation.","Estoy aquí de vacaciones."],["A1","Hotel y viajes","I'm staying for one week.","Me quedo una semana."],["A1","Hotel y viajes","Where is the baggage claim?","¿Dónde está la entrega de equipaje?"],["A1","Hotel y viajes","My flight is at noon.","Mi vuelo es al mediodía."],["A1","Hotel y viajes","Is breakfast included?","¿El desayuno está incluido?"],["A1","Hotel y viajes","The room is very nice.","La habitación es muy linda."],["A1","Hotel y viajes","I lost my bag.","Perdí mi bolso."],["A1","Hotel y viajes","Do you have a map?","¿Tiene un mapa?"],["A1","Hotel y viajes","Can you take a photo of us?","¿Puedes sacarnos una foto?"],["A1","Emergencias","Help!","¡Ayuda!"],["A1","Emergencias","Call the police!","¡Llame a la policía!"],["A1","Emergencias","Call an ambulance!","¡Llame a una ambulancia!"],["A1","Emergencias","I need help now.","Necesito ayuda ahora."],["A1","Emergencias","It's an emergency.","Es una emergencia."],["A1","Emergencias","Someone is hurt.","Alguien está herido."],["A1","Emergencias","I lost my wallet.","Perdí mi billetera."],["A1","Emergencias","My phone was stolen.","Me robaron el teléfono."],["A1","Emergencias","Fire!","¡Fuego!"],["A1","Emergencias","Please hurry.","Por favor, apúrese."],["A1","Emergencias","Stay calm.","Mantén la calma."],["A1","Expresiones comunes","Sure.","Claro."],["A1","Expresiones comunes","Of course.","Por supuesto."],["A1","Expresiones comunes","Really?","¿En serio?"],["A1","Expresiones comunes","Me too.","Yo también."],["A1","Expresiones comunes","Me neither.","Yo tampoco."],["A1","Expresiones comunes","I hope so.","Eso espero."],["A1","Expresiones comunes","I'm not sure.","No estoy seguro."],["A1","Expresiones comunes","Let's go!","¡Vamos!"],["A1","Expresiones comunes","Come on!","¡Vamos, anda!"],["A1","Expresiones comunes","Hurry up!","¡Apúrate!"],["A1","Expresiones comunes","Take it easy.","Tómalo con calma."],["A1","Expresiones comunes","Good luck!","¡Buena suerte!"],["A1","Expresiones comunes","Cheers!","¡Salud!"],["A1","Expresiones comunes","Exactly.","Exacto."],["A1","Expresiones comunes","Right.","Correcto."],["A1","Expresiones comunes","All right.","De acuerdo."],["A1","Expresiones comunes","Never mind.","No importa."],["A1","Expresiones comunes","That's right.","Así es."],["A1","Expresiones comunes","I got it.","Entendido."],["A1","Expresiones comunes","What a surprise!","¡Qué sorpresa!"],["A1","Expresiones comunes","No way!","¡No puede ser!"],["A1","Expresiones comunes","Here you are.","Aquí tienes."],["A1","Expresiones comunes","Anything else?","¿Algo más?"],["A1","Expresiones comunes","Just kidding.","Es broma."],["A1","Expresiones comunes","Let me know.","Avísame."]];
+  var LEARN_AHEAD = 20 * MIN;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  function todayStr() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function defaults() {
+    return { seed: Math.floor(Math.random() * 2147483647), set: { lvl: 'A1', n: 100000, perDay: 10, auto: true, voice: '', req: true, thr: 80, showCat: false }, cards: {}, day: { d: todayStr(), done: 0, bonus: 0 } };
+  }
+
+  /* ---------- Conexión opcional con Apps Script ---------- */
+  function getConn() {
+    var s = lsGet(CONN_KEY); if (!s) return null;
+    try {
+      var u = new URL(s.trim());
+      if (u.origin !== 'https://script.google.com' || u.pathname.indexOf('/macros/') !== 0) return null;
+      var key = u.searchParams.get('key'); if (!key) return null;
+      return { base: u.origin + u.pathname, key: key };
+    } catch (e) { return null; }
+  }
+  function withTimeout(p, ms) {
+    return new Promise(function (res, rej) {
+      var t = setTimeout(function () { rej(new Error('tiempo agotado')); }, ms);
+      p.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); });
+    });
+  }
+  function apiGet(action) {
+    var c = getConn(); if (!c) return Promise.reject(new Error('sin conexión configurada'));
+    return withTimeout(fetch(c.base + '?action=' + action + '&key=' + encodeURIComponent(c.key)).then(function (r) { return r.json(); }), 9000).then(function (j) {
+      if (!j || !j.ok) throw new Error(j && j.error === 'clave' ? 'La clave no coincide con la de Code.gs.' : ((j && j.error) || 'respuesta inválida'));
+      return j;
+    });
+  }
+  function apiSave(text) {
+    var c = getConn(); if (!c) return Promise.reject(new Error('sin conexión'));
+    return withTimeout(fetch(c.base, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: c.key, action: 'save', data: text }) }).then(function (r) { return r.json(); }), 12000).then(function (j) {
+      if (!j || !j.ok) throw new Error((j && j.error) || 'respuesta inválida');
+    });
+  }
+
+  /* ---------- Estado ---------- */
+  var state = defaults(), booted = false, saveTimer = null;
+  function adopt(p) {
+    if (!p || typeof p.cards !== 'object' || !p.set) return false;
+    var d = defaults();
+    state = Object.assign(d, p, { set: Object.assign(d.set, p.set) });
+    if (!state.seed) state.seed = d.seed;
+    return true;
+  }
+  try { var raw = lsGet(KEY); if (raw) adopt(JSON.parse(raw)); } catch (e) {}
+  function setSync(m) { var n = $('syncNote'); if (n) n.textContent = m; }
+  function pushServer() {
+    if (!getConn()) return;
+    setSync('Guardando en tu cuenta de Google…');
+    apiSave(JSON.stringify(state)).then(function () { setSync('Guardado en tu cuenta de Google.'); },
+      function (e) { setSync('No se pudo guardar en Google (' + e.message + '). Se reintentará con el próximo cambio.'); });
+  }
+  function save() {
+    state.t = Date.now();
+    var ok = lsSet(KEY, JSON.stringify(state));
+    if (!ok) $('storeNote').textContent = 'Este navegador no deja guardar datos. Tu progreso se perderá al cerrar la página; copia una copia de seguridad.';
+    clearTimeout(saveTimer); saveTimer = setTimeout(pushServer, 1500);
+  }
+  function ensureDay() { if (!state.day || state.day.d !== todayStr()) { state.day = { d: todayStr(), done: 0, bonus: 0 }; save(); } }
+
+  /* ---------- Frases ---------- */
+  var ITEMS = [], BYID = {}, LEVELS = [], POOL = [], DECK = [], DECKSET = {}, sheetErr = '';
+  function hid(s) {
+    s = String(s).toLowerCase().replace(/\s+/g, ' ').trim();
+    var h1 = 5381, h2 = 0;
+    for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); h1 = ((h1 * 33) ^ c) >>> 0; h2 = (c + (h2 << 6) + (h2 << 16) - h2) >>> 0; }
+    return h1.toString(36) + h2.toString(36);
+  }
+  function mix(seed, id) {
+    var h = (2166136261 ^ seed) >>> 0, s = String(id);
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    h ^= h >>> 15; h = Math.imul(h, 2246822507) >>> 0; h ^= h >>> 13;
+    return h >>> 0;
+  }
+  function setItems(rows) {
+    ITEMS = []; BYID = {};
+    (rows || []).forEach(function (r) {
+      var en = String(r[2] || '').trim(), es = String(r[3] || '').trim();
+      if (!en || !es) return;
+      var id = hid(en); if (BYID[id]) return;
+      var it = { id: id, idx: ITEMS.length, lvl: (String(r[0] || '').trim().toUpperCase() || 'A1'), cat: String(r[1] || '').trim(), s: en, es: es, k: 0 };
+      ITEMS.push(it); BYID[id] = it;
+    });
+    var seen = {}; LEVELS = [];
+    ITEMS.forEach(function (it) { if (!seen[it.lvl]) { seen[it.lvl] = 1; LEVELS.push(it.lvl); } });
+    LEVELS.sort();
+  }
+  function rebuildDeck() {
+    if (state.set.lvl !== 'ALL' && LEVELS.indexOf(state.set.lvl) < 0) state.set.lvl = LEVELS[0] || 'A1';
+    var all = state.set.lvl === 'ALL';
+    ITEMS.forEach(function (it) { it.k = mix(state.seed, it.id); });
+    POOL = (all ? ITEMS.slice() : ITEMS.filter(function (it) { return it.lvl === state.set.lvl; }))
+      .sort(function (a, b) { if (all && a.lvl !== b.lvl) return a.lvl < b.lvl ? -1 : 1; return a.k - b.k || (a.id < b.id ? -1 : 1); });
+    var seenIt = POOL.filter(function (it) { return !!state.cards[it.id]; });
+    var fresh = POOL.filter(function (it) { return !state.cards[it.id]; });
+    var take = Math.max(0, Math.max(1, state.set.n) - seenIt.length);
+    DECK = seenIt.concat(fresh.slice(0, take)); DECKSET = {};
+    DECK.forEach(function (it) { DECKSET[it.id] = 1; });
+  }
+  function readCache() { try { var c = JSON.parse(lsGet(CACHE_KEY) || 'null'); return c && c.length ? c : null; } catch (e) { return null; } }
+  function loadInitialItems() { setItems(readCache() || EMBED); }
+  loadInitialItems();
+
+  /* ---------- Audio ---------- */
+  var voices = [];
+  var hasTTS = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  var PREFER = /(Samantha|Google US English|Allison|Ava|Aaron|Nicky|Jenny|Aria|Evan|Zoe|Natural)/i;
+  function loadVoices() {
+    if (!hasTTS) return;
+    voices = speechSynthesis.getVoices().filter(function (v) { return /^en[-_]US$/i.test(v.lang); });
+    var sel = $('voice'); sel.innerHTML = '';
+    if (!voices.length) {
+      var o = document.createElement('option'); o.textContent = 'Voz predeterminada del dispositivo'; o.value = ''; sel.appendChild(o);
+      $('voiceNote').textContent = 'Este dispositivo no muestra voces en inglés de EE. UU. Se usará la predeterminada con acento americano si existe.';
+      return;
+    }
+    var auto = document.createElement('option'); auto.value = ''; auto.textContent = 'Automática (la mejor disponible)'; sel.appendChild(auto);
+    voices.forEach(function (v) { var o = document.createElement('option'); o.value = v.name; o.textContent = v.name; sel.appendChild(o); });
+    sel.value = state.set.voice || '';
+    $('voiceNote').textContent = voices.length + ' voces de EE. UU. disponibles en este dispositivo.';
+  }
+  function pickVoice() {
+    if (!voices.length) return null;
+    var named = voices.find(function (v) { return v.name === state.set.voice; });
+    if (named) return named;
+    return voices.find(function (v) { return PREFER.test(v.name); }) || voices[0];
+  }
+  var timer = null;
+  function speak(text, slow) {
+    if (!hasTTS) { var n = $('audioNote'); n.hidden = false; n.textContent = 'Este navegador no puede reproducir audio de voz.'; return; }
+    try {
+      speechSynthesis.cancel(); clearTimeout(timer);
+      timer = setTimeout(function () {
+        var u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        var v = pickVoice(); if (v) u.voice = v;
+        u.rate = slow ? 0.62 : 0.92;
+        u.onstart = function () { $('play').classList.add('on'); };
+        u.onend = u.onerror = function () { $('play').classList.remove('on'); };
+        speechSynthesis.speak(u);
+      }, 60);
+    } catch (e) {}
+  }
+  if (hasTTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+  else { $('voiceNote').textContent = 'Este navegador no tiene síntesis de voz.'; }
+
+  /* ---------- Pronunciación (micrófono dentro de la página) ---------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var micDenied = false, rec = null, listening = false, attempts = 0, cardBest = null, current = null, revealed = false;
+  var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var MIC_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15z"/><path d="M18 11.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V20H9.5a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2H13v-2.6a6 6 0 0 0 5-5.9z"/></svg>';
+  function micReason() {
+    if (!SR) return 'Este navegador no tiene reconocimiento de voz. Usa Safari en iPhone, o Chrome o Edge en otros dispositivos.';
+    if (micDenied) return IOS ? 'El micrófono está bloqueado para este sitio. En Safari toca aA, luego Ajustes del sitio web, Micrófono y elige Permitir.' : 'El micrófono está bloqueado para este sitio. Permítelo desde el candado de la barra de direcciones y recarga la página.';
+    return '';
+  }
+  function voiceOn() { return !!state.set.req && !micReason(); }
+
+  function buildActions() {
+    var a = $('actions'); a.textContent = '';
+    if (!voiceOn()) {
+      var b = document.createElement('button'); b.className = 'reveal'; b.id = 'reveal'; b.textContent = 'Ver traducción';
+      b.addEventListener('click', function () { reveal(); }); a.appendChild(b);
+      $('hint').textContent = (state.set.req && micReason()) ? micReason() + ' Puedes ver la traducción sin hablar.' : 'Teclas: Espacio muestra la traducción · 1 a 4 califican · R repite el audio';
+      return;
+    }
+    var m = document.createElement('button'); m.className = 'mic'; m.id = 'mic'; m.innerHTML = MIC_SVG + '<span id="micLbl">Decir la frase</span>';
+    m.addEventListener('click', toggleListen); a.appendChild(m);
+    var s = document.createElement('button'); s.className = 'link'; s.id = 'skip'; s.textContent = 'Ver traducción sin hablar'; s.hidden = true;
+    s.addEventListener('click', function () { abortListen(); reveal(); }); a.appendChild(s);
+    $('hint').textContent = 'Toca el micrófono y di la frase como la oíste. Teclas: Espacio para hablar · R repite el audio · 1 a 4 califican';
+  }
+  function setMicUI() {
+    var m = $('mic'); if (!m) return;
+    m.classList.toggle('rec', listening);
+    $('micLbl').textContent = listening ? 'Escuchando… toca para terminar' : (attempts ? 'Intentar otra vez' : 'Decir la frase');
+  }
+  function abortListen() {
+    if (rec) { try { rec.onend = null; rec.onresult = null; rec.onerror = null; rec.abort(); } catch (e) {} }
+    rec = null; listening = false;
+  }
+  function showMsg(text) { $('speech').hidden = false; $('heard').textContent = text; $('score').hidden = true; $('fb').hidden = true; $('legend').hidden = true; }
+  function showSkip() { var s = $('skip'); if (s) s.hidden = false; }
+
+  function toggleListen() {
+    if (!current || revealed || !SR) return;
+    if (listening) { try { rec.stop(); } catch (e) {} return; }
+    if (hasTTS) { try { speechSynthesis.cancel(); } catch (e) {} }
+    $('play').classList.remove('on');
+    var r = new SR(), alts = null, interim = '', err = '';
+    rec = r; r.lang = 'en-US'; r.interimResults = true; r.maxAlternatives = 3; r.continuous = false;
+    r.onresult = function (e) {
+      var res = e.results[e.results.length - 1];
+      if (res.isFinal) { alts = []; for (var i = 0; i < res.length; i++) alts.push(res[i].transcript); interim = alts[0]; }
+      else { interim = res[0].transcript; }
+      $('heard').textContent = '“' + interim + '”';
+    };
+    r.onerror = function (e) { err = e.error || 'error'; };
+    r.onend = function () {
+      listening = false; rec = null; setMicUI();
+      if (err === 'not-allowed') { micDenied = true; buildActions(); showMsg(micReason()); return; }
+      if (err === 'service-not-allowed') { showMsg('En iPhone activa Siri y Dictado (Ajustes, Siri) y permite el micrófono para este sitio.'); showSkip(); return; }
+      if (err === 'audio-capture') { showMsg('No se detectó ningún micrófono.'); showSkip(); return; }
+      if (err === 'network') { showMsg('El reconocimiento de voz necesita conexión a internet.'); showSkip(); return; }
+      var list = alts || (interim ? [interim] : null);
+      if (!list) { showMsg('No te escuché. Acércate al micrófono y vuelve a intentar.'); if (++attempts >= 3) showSkip(); setMicUI(); return; }
+      evaluate(list);
+    };
+    showMsg('Escuchando…');
+    try { r.start(); listening = true; setMicUI(); }
+    catch (e) { rec = null; showMsg('No se pudo iniciar el micrófono.'); showSkip(); }
+  }
+
+  function evaluate(list) {
+    var w = BYID[current.r], best = null;
+    list.forEach(function (t) { var s = scoreSpeech(w.s, t); if (!best || s.pct > best.pct) { best = s; best.heard = t; } });
+    attempts++;
+    if (cardBest === null || best.pct > cardBest) cardBest = best.pct;
+    var thr = state.set.thr, pass = best.pct >= thr;
+    $('speech').hidden = false;
+    $('heard').textContent = 'Escuché: “' + best.heard + '”';
+    var sc = $('score'); sc.hidden = false; sc.className = 'score ' + (pass ? 'pass' : best.pct >= thr - 20 ? 'mid' : 'low');
+    $('pct').textContent = best.pct + '%';
+    $('verdict').textContent = pass ? '¡Desbloqueada!' : 'Necesitas ' + thr + '%. Escucha otra vez y repite.';
+    var fb = $('fb'); fb.textContent = ''; fb.hidden = false; $('legend').hidden = false;
+    best.words.forEach(function (x, i) {
+      var s = document.createElement('span'); s.className = x.c; s.textContent = x.t; fb.appendChild(s);
+      if (i < best.words.length - 1) fb.appendChild(document.createTextNode(' '));
+    });
+    setMicUI();
+    if (pass) reveal(); else if (attempts >= 3) showSkip();
+  }
+
+  /* ---------- Cola de estudio ---------- */
+  function unseenCount() { var c = 0; DECK.forEach(function (it) { if (!state.cards[it.id]) c++; }); return c; }
+  function nextUnseen() { for (var i = 0; i < DECK.length; i++) if (!state.cards[DECK[i].id]) return DECK[i].id; return null; }
+  function newLeft() { var lim = state.set.perDay + (state.day.bonus || 0) - state.day.done; return Math.max(0, Math.min(lim, unseenCount())); }
+  function pickNext(now) {
+    var learn = [], rev = [];
+    Object.keys(state.cards).forEach(function (k) {
+      var c = state.cards[k]; if (!DECKSET[c.r] || !BYID[c.r]) return;
+      if (c.st === 'L') learn.push(c); else if (c.st === 'R' && c.due <= now) rev.push(c);
+    });
+    learn.sort(function (a, b) { return a.due - b.due; });
+    rev.sort(function (a, b) { return a.due - b.due || BYID[a.r].k - BYID[b.r].k; });
+    if (learn.length && learn[0].due <= now) return learn[0];
+    if (rev.length) return rev[0];
+    if (newLeft() > 0) return newCard(nextUnseen());
+    if (learn.length && learn[0].due <= now + LEARN_AHEAD) return learn[0];
+    return null;
+  }
+  function counts(now) {
+    var l = 0, r = 0;
+    Object.keys(state.cards).forEach(function (k) {
+      var c = state.cards[k]; if (!DECKSET[c.r]) return;
+      if (c.st === 'L') l++; else if (c.st === 'R' && c.due <= now) r++;
+    });
+    return { n: newLeft(), l: l, r: r };
+  }
+
+  /* ---------- Pantalla ---------- */
+  function updateTop() {
+    var c = counts(Date.now());
+    $('cNew').textContent = c.n; $('cLearn').textContent = c.l; $('cRev').textContent = c.r;
+    var seen = 0; DECK.forEach(function (it) { if (state.cards[it.id]) seen++; });
+    var n = DECK.length;
+    $('pLabel').textContent = 'Frases vistas: ' + seen + ' de ' + n;
+    $('pPct').textContent = (n ? Math.round(seen / n * 100) : 0) + '%';
+    $('pBar').style.width = (n ? seen / n * 100 : 0) + '%';
+  }
+  var CHIP = { N: 'Nueva', L: 'Aprendiendo', R: 'Repaso' };
+
+  function render() {
+    ensureDay(); updateTop();
+    if (!ITEMS.length) { showEmpty('No hay frases cargadas. Revisa la conexión con tu hoja en Ajustes.'); return; }
+    if (!DECK.length) { showEmpty('No hay frases para el nivel elegido. Cambia el nivel en Ajustes.'); return; }
+    current = pickNext(Date.now());
+    if (!current) { showDone(); return; }
+    $('done').hidden = true; $('study').hidden = false;
+    revealed = false;
+    var w = BYID[current.r];
+    $('lvl').textContent = w.lvl;
+    $('catChip').textContent = w.cat; $('catChip').hidden = !(state.set.showCat && w.cat);
+    $('stateChip').textContent = current.st === 'L' && current.ivl > 0 ? 'Reaprendiendo' : CHIP[current.st];
+    $('sentence').textContent = w.s;
+    $('answer').hidden = true; $('audioNote').hidden = true;
+    abortListen(); attempts = 0; cardBest = null;
+    $('speech').hidden = true; $('heard').textContent = ''; $('score').hidden = true; $('fb').hidden = true; $('legend').hidden = true;
+    buildActions();
+    $('hint').hidden = false;
+  }
+
+  function reveal() {
+    if (!current || revealed) return;
+    revealed = true;
+    $('es').textContent = BYID[current.r].es;
+    $('answer').hidden = false;
+    var now = Date.now(), a = $('actions'); a.textContent = '';
+    var wrap = document.createElement('div'); wrap.className = 'rates';
+    [[1, 'again', 'Otra vez'], [2, 'hard', 'Difícil'], [3, 'good', 'Bien'], [4, 'easy', 'Fácil']].forEach(function (x) {
+      var btn = document.createElement('button'); btn.className = 'rate ' + x[1]; btn.dataset.q = x[0];
+      var l = document.createElement('span'); l.className = 'rl'; l.textContent = x[2];
+      var i = document.createElement('span'); i.className = 'ri'; i.textContent = fmtPreview(sched(current, x[0], now), now);
+      btn.appendChild(l); btn.appendChild(i);
+      btn.addEventListener('click', function () { rate(x[0]); });
+      wrap.appendChild(btn);
+    });
+    a.appendChild(wrap);
+    $('hint').textContent = 'Califica qué tan fácil te resultó recordarla.';
+  }
+
+  function rate(q) {
+    if (!current || !revealed) return;
+    var wasNew = current.st === 'N';
+    var nc = sched(current, q, Date.now()); if (cardBest !== null) nc.pr = cardBest; state.cards[current.r] = nc;
+    if (wasNew) state.day.done++;
+    save();
+    render();
+    if (current && !$('study').hidden && state.set.auto) speak(BYID[current.r].s, false);
+  }
+
+  function showEmpty(msg) {
+    $('study').hidden = true;
+    var d = $('done'); d.hidden = false; d.textContent = '';
+    var h = document.createElement('h2'); h.textContent = 'No hay frases para estudiar'; d.appendChild(h);
+    var p = document.createElement('p'); p.textContent = msg; d.appendChild(p);
+    var gear = document.createElement('button'); gear.className = 'btn'; gear.textContent = 'Abrir ajustes';
+    gear.addEventListener('click', function () { setSettings(true); }); d.appendChild(gear);
+  }
+
+  function showDone() {
+    $('study').hidden = true;
+    var d = $('done'); d.hidden = false; d.textContent = '';
+    var h = document.createElement('h2'); h.textContent = 'Terminaste por hoy'; d.appendChild(h);
+    var p = document.createElement('p');
+    var nextDue = 0;
+    Object.keys(state.cards).forEach(function (k) { var c = state.cards[k]; if (DECKSET[c.r] && c.st === 'R' && (!nextDue || c.due < nextDue)) nextDue = c.due; });
+    var unseen = unseenCount();
+    if (nextDue) {
+      var days = Math.max(1, Math.round((nextDue - Date.now()) / 86400000));
+      p.textContent = 'El próximo repaso es ' + (days === 1 ? 'mañana.' : 'en ' + days + ' días.');
+    } else { p.textContent = 'No tienes tarjetas pendientes.'; }
+    d.appendChild(p);
+    if (unseen > 0) {
+      var more = document.createElement('button'); more.className = 'btn'; more.textContent = 'Aprender ' + Math.min(10, unseen) + ' frases nuevas más';
+      more.addEventListener('click', function () { state.day.bonus = (state.day.bonus || 0) + 10; save(); render(); });
+      d.appendChild(more);
+    } else {
+      var q = document.createElement('p'); q.textContent = 'Ya viste todas las frases elegidas. Sube la cantidad o cambia de nivel en Ajustes.'; d.appendChild(q);
+    }
+    var gear = document.createElement('button'); gear.className = 'btn ghost'; gear.textContent = 'Abrir ajustes';
+    gear.addEventListener('click', function () { setSettings(true); }); d.appendChild(gear);
+  }
+
+  /* ---------- Ajustes ---------- */
+  var D_PRESETS = [5, 10, 20, 30, 50];
+  function chips(el, list, getVal, onPick, label) {
+    el.textContent = '';
+    list.forEach(function (v) {
+      var b = document.createElement('button'); b.className = 'pill'; b.textContent = label ? label(v) : v; b.setAttribute('aria-pressed', String(getVal() === v));
+      b.addEventListener('click', function () { onPick(v); }); el.appendChild(b);
+    });
+  }
+  function syncSettings() {
+    var max = Math.max(1, POOL.length), shown = Math.min(state.set.n, max);
+    $('nOut').textContent = shown; $('nRange').min = Math.min(5, max); $('nRange').max = max; $('nRange').step = max < 20 ? 1 : 5; $('nRange').value = shown;
+    $('nOf').textContent = 'de ' + POOL.length + ' frases en este nivel';
+    var lv = LEVELS.slice(); if (lv.length > 1) lv.push('ALL');
+    chips($('lvlChips'), lv, function () { return state.set.lvl; }, function (v) { state.set.lvl = v; save(); rebuildDeck(); syncSettings(); render(); }, function (v) { return v === 'ALL' ? 'Todos' : v; });
+    var np = [10, 25, 50, 100, 200].filter(function (v) { return v < max; }); np.push(max);
+    chips($('nChips'), np, function () { return shown; }, function (v) { state.set.n = v >= max ? 100000 : v; save(); rebuildDeck(); syncSettings(); render(); }, function (v) { return v === max ? 'Todas (' + max + ')' : v; });
+    chips($('dayChips'), D_PRESETS, function () { return state.set.perDay; }, function (v) { state.set.perDay = v; save(); syncSettings(); render(); });
+    $('auto').checked = !!state.set.auto; $('req').checked = !!state.set.req; $('showCat').checked = !!state.set.showCat;
+    chips($('thrChips'), [70, 80, 90], function () { return state.set.thr; }, function (v) { state.set.thr = v; save(); syncSettings(); }, function (v) { return v + '%'; });
+    $('micNote').textContent = 'Toca el micrófono y habla en la misma pantalla. El navegador pide permiso la primera vez. En iPhone usa Safari con Siri y Dictado activados. Necesita internet.' + (micReason() ? ' ' + micReason() : '');
+    var cn = getConn(); $('connIn').value = lsGet(CONN_KEY) || '';
+    $('sheetNote').textContent = sheetErr ? ('Problema con la hoja: ' + sheetErr) : (cn ? 'Frases cargadas: ' + ITEMS.length + '. Niveles: ' + (LEVELS.join(', ') || 'ninguno') + '.' : 'Usando las ' + ITEMS.length + ' frases incluidas en la app (niveles: ' + (LEVELS.join(', ') || 'ninguno') + ').');
+    $('storeNote').textContent = cn ? 'Tu progreso se guarda en este navegador y en tu cuenta de Google. También puedes copiarlo como respaldo.' : 'Tu progreso se guarda solo en este navegador. Copia una copia de seguridad de vez en cuando, o conecta tu hoja para guardarlo en tu cuenta de Google.';
+    var st = { seen: 0, learn: 0, young: 0, mature: 0, prN: 0, prS: 0 };
+    Object.keys(state.cards).forEach(function (k) { var c = state.cards[k]; if (!BYID[c.r]) return; st.seen++; if (c.pr != null) { st.prN++; st.prS += c.pr; } if (c.st === 'L') st.learn++; else if (c.ivl >= 21) st.mature++; else st.young++; });
+    var box = $('stats'); box.textContent = '';
+    [['Frases vistas', st.seen], ['Aprendiendo', st.learn], ['En repaso', st.young], ['Dominadas (21+ días)', st.mature], ['Pronunciación media', st.prN ? Math.round(st.prS / st.prN) + '%' : '—'], ['Frases habladas', st.prN]].forEach(function (x) {
+      var d = document.createElement('div'), b = document.createElement('b'), s = document.createElement('small');
+      b.textContent = x[1]; s.textContent = x[0]; d.appendChild(b); d.appendChild(s); box.appendChild(d);
+    });
+  }
+  function setSettings(open) {
+    $('settings').hidden = !open; $('gear').setAttribute('aria-expanded', String(open));
+    if (open) { syncSettings(); $('settings').scrollIntoView({ block: 'start' }); }
+  }
+  $('gear').addEventListener('click', function () { setSettings($('settings').hidden); });
+  $('nRange').addEventListener('input', function (e) { state.set.n = +e.target.value; $('nOut').textContent = state.set.n; });
+  $('nRange').addEventListener('change', function () { save(); rebuildDeck(); syncSettings(); render(); });
+  $('auto').addEventListener('change', function (e) { state.set.auto = e.target.checked; save(); });
+  $('showCat').addEventListener('change', function (e) { state.set.showCat = e.target.checked; save(); if (current && !$('study').hidden) $('catChip').hidden = !(state.set.showCat && BYID[current.r].cat); });
+  $('voice').addEventListener('change', function (e) { state.set.voice = e.target.value; save(); });
+  $('req').addEventListener('change', function (e) { state.set.req = e.target.checked; save(); syncSettings(); if (current && !revealed && !$('study').hidden) buildActions(); });
+
+  /* conexión con la hoja */
+  function refreshFromSheet(cb) {
+    apiGet('phrases').then(function (j) {
+      sheetErr = ''; setItems(j.rows); lsSet(CACHE_KEY, JSON.stringify(j.rows)); cb(null, j.rows.length);
+    }, function (e) { sheetErr = e.message; cb(e); });
+  }
+  $('connSave').addEventListener('click', function () {
+    var v = $('connIn').value.trim(), note = $('connNote');
+    if (!v) { note.textContent = 'Pega primero la dirección con la clave.'; return; }
+    lsSet(CONN_KEY, v);
+    if (!getConn()) { lsSet(CONN_KEY, null); note.textContent = 'La dirección debe empezar con https://script.google.com/macros/ y terminar con ?key= y tu clave.'; return; }
+    note.textContent = 'Probando la conexión…';
+    refreshFromSheet(function (err, n) {
+      if (err) { note.textContent = 'No se pudo conectar: ' + err.message; syncSettings(); return; }
+      note.textContent = 'Conectado. Se leyeron ' + n + ' frases.';
+      apiGet('progress').then(function (j) {
+        try { if (j.data) { var p = JSON.parse(j.data); if (p && (p.t || 0) > (state.t || 0)) adopt(p); } } catch (e) {}
+      }, function () {}).then(function () { save(); rebuildDeck(); syncSettings(); render(); });
+    });
+  });
+  $('connOff').addEventListener('click', function () {
+    lsSet(CONN_KEY, null); lsSet(CACHE_KEY, null); sheetErr = ''; loadInitialItems(); rebuildDeck();
+    $('connNote').textContent = 'Desconectado. Se usan las frases incluidas en la app.'; syncSettings(); render();
+  });
+
+  $('copyBtn').addEventListener('click', function () {
+    var txt = JSON.stringify(state), ta = $('backup'); ta.value = txt;
+    var ok = function () { $('backupMsg').textContent = 'Copiado. Guárdalo en un lugar seguro.'; };
+    var fail = function () { ta.focus(); ta.select(); $('backupMsg').textContent = 'Selecciona el texto y cópialo manualmente.'; };
+    try { navigator.clipboard.writeText(txt).then(ok, fail); } catch (e) { fail(); }
+  });
+  $('restoreBtn').addEventListener('click', function () {
+    try {
+      if (!adopt(JSON.parse($('backup').value))) throw 0;
+      save(); rebuildDeck(); syncSettings(); render(); $('backupMsg').textContent = 'Progreso restaurado.';
+    } catch (e) { $('backupMsg').textContent = 'No se pudo leer ese texto. Copia el progreso completo.'; }
+  });
+  var resetArmed = false, resetT = null;
+  $('resetBtn').addEventListener('click', function () {
+    var b = $('resetBtn');
+    if (!resetArmed) { resetArmed = true; b.textContent = '¿Seguro? Toca otra vez'; resetT = setTimeout(function () { resetArmed = false; b.textContent = 'Borrar todo'; }, 4000); return; }
+    clearTimeout(resetT); resetArmed = false; b.textContent = 'Borrar todo';
+    state = defaults(); save(); rebuildDeck(); syncSettings(); render(); $('backupMsg').textContent = 'Progreso borrado.';
+  });
+
+  /* ---------- Eventos ---------- */
+  $('play').addEventListener('click', function () { if (current) speak(BYID[current.r].s, false); });
+  $('slow').addEventListener('click', function () { if (current) speak(BYID[current.r].s, true); });
+  document.addEventListener('keydown', function (e) {
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!current || $('study').hidden) return;
+    if ((e.key === ' ' || e.key === 'Enter') && tag !== 'BUTTON') { e.preventDefault(); if (!revealed) { if (voiceOn()) toggleListen(); else reveal(); } else rate(3); }
+    else if (revealed && /^[1-4]$/.test(e.key)) rate(+e.key);
+    else if (e.key === 'r' || e.key === 'R') speak(BYID[current.r].s, false);
+  });
+
+  /* ---------- Arranque ---------- */
+  function go() { if (booted) return; booted = true; $('loading').hidden = true; rebuildDeck(); syncSettings(); render(); }
+  if (getConn()) {
+    var left = 2, part = function () { if (--left === 0) go(); };
+    setSync('Cargando…');
+    apiGet('progress').then(function (j) {
+      try { if (j.data && !booted) { var p = JSON.parse(j.data); if (p && (p.t || 0) > (state.t || 0)) adopt(p); } } catch (e) {}
+      setSync(j.data ? 'Sincronizado con tu cuenta de Google.' : '');
+    }, function (e) { setSync('No se pudo leer tu progreso de Google (' + e.message + '). Usando el de este navegador.'); }).then(part);
+    refreshFromSheet(function () { if (booted) { rebuildDeck(); syncSettings(); render(); } else part(); });
+    setTimeout(go, 10000);
+  } else { go(); }
+})();
+</script>
+</body>
+</html>
