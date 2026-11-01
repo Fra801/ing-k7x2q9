@@ -600,6 +600,34 @@ function scoreSpeech(target, heard) {
   if (hasTTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
   else { $('voiceNote').textContent = 'Este navegador no tiene síntesis de voz.'; }
 
+  /* ---------- Sonidos de acierto y error ---------- */
+  var audioCtx = null;
+  function unlockAudio() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) {}
+  }
+  function beep(freq, start, dur, type, vol) {
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    var t0 = audioCtx.currentTime + start;
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+  function playSound(kind) {
+    if (state.set.sounds === false || !audioCtx) return;
+    try {
+      if (kind === 'ok') { beep(660, 0, 0.12, 'sine', 0.25); beep(880, 0.12, 0.2, 'sine', 0.25); }
+      else { beep(220, 0, 0.18, 'square', 0.12); beep(150, 0.18, 0.28, 'square', 0.12); }
+    } catch (e) {}
+  }
+
   /* ---------- Pronunciación (micrófono dentro de la página) ---------- */
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var micDenied = false, rec = null, listening = false, attempts = 0, cardBest = null, current = null, revealed = false;
@@ -640,6 +668,7 @@ function scoreSpeech(target, heard) {
 
   function toggleListen() {
     if (!current || revealed || !SR) return;
+    unlockAudio();
     if (listening) { try { rec.stop(); } catch (e) {} return; }
     if (hasTTS) { try { speechSynthesis.cancel(); } catch (e) {} }
     $('play').classList.remove('on');
@@ -684,6 +713,7 @@ function scoreSpeech(target, heard) {
       if (i < best.words.length - 1) fb.appendChild(document.createTextNode(' '));
     });
     setMicUI();
+    playSound(pass ? 'ok' : 'err');
     if (pass) reveal(); else if (attempts >= 3) showSkip();
   }
 
