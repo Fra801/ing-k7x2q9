@@ -454,6 +454,9 @@ function scoreSpeech(target, heard) {
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  /* Si la dirección del acceso directo termina en #conn=<URL de Apps Script con ?key=...>, la conexión se restaura sola aunque Safari haya borrado los datos. */
+  try { var cm = /^#conn=(.+)$/.exec(location.hash); if (cm) lsSet(CONN_KEY, decodeURIComponent(cm[1])); } catch (e) {}
+  function emptyState(s) { return !s || !s.cards || Object.keys(s.cards).length === 0; }
   function todayStr() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function defaults() {
     return { seed: Math.floor(Math.random() * 2147483647), set: { lvl: 'A1', n: 100000, perDay: 10, auto: true, voice: '', req: true, thr: 80, showCat: false }, cards: {}, day: { d: todayStr(), done: 0, bonus: 0 } };
@@ -482,9 +485,10 @@ function scoreSpeech(target, heard) {
       return j;
     });
   }
-  function apiSave(text) {
+  function apiSave(text, keep) {
     var c = getConn(); if (!c) return Promise.reject(new Error('sin conexión'));
-    return withTimeout(fetch(c.base, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: c.key, action: 'save', data: text }) }).then(function (r) { return r.json(); }), 12000).then(function (j) {
+    var body = JSON.stringify({ key: c.key, action: 'save', data: text });
+    return withTimeout(fetch(c.base, { method: 'POST', keepalive: !!keep && body.length < 60000, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body }).then(function (r) { return r.json(); }), 12000).then(function (j) {
       if (!j || !j.ok) throw new Error((j && j.error) || 'respuesta inválida');
     });
   }
@@ -500,18 +504,34 @@ function scoreSpeech(target, heard) {
   }
   try { var raw = lsGet(KEY); if (raw) adopt(JSON.parse(raw)); } catch (e) {}
   function setSync(m) { var n = $('syncNote'); if (n) n.textContent = m; }
-  function pushServer() {
+  function pushServer(keep) {
     if (!getConn()) return;
     setSync('Guardando en tu cuenta de Google…');
-    apiSave(JSON.stringify(state)).then(function () { setSync('Guardado en tu cuenta de Google.'); },
+    apiSave(JSON.stringify(state), keep).then(function () { setSync('Guardado en tu cuenta de Google.'); },
       function (e) { setSync('No se pudo guardar en Google (' + e.message + '). Se reintentará con el próximo cambio.'); });
+  }
+  var lastSaved = 0;
+  function savedInfo() {
+    if (!lastSaved) return '';
+    var d = new Date(lastSaved), n = Object.keys(state.cards || {}).length;
+    return ' Último guardado: ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' · ' + n + ' tarjetas registradas.';
   }
   function save() {
     state.t = Date.now();
     var ok = lsSet(KEY, JSON.stringify(state));
     if (!ok) $('storeNote').textContent = 'Este navegador no deja guardar datos. Tu progreso se perderá al cerrar la página; copia una copia de seguridad.';
+    else lastSaved = Date.now();
     clearTimeout(saveTimer); saveTimer = setTimeout(pushServer, 1500);
   }
+  /* Al cerrar o esconder la página (cambiar de app en iPhone) se guarda de inmediato, sin esperar el retardo. */
+  function flush() {
+    if (!booted) return;
+    lsSet(KEY, JSON.stringify(state));
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; pushServer(true); }
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+  window.addEventListener('pagehide', flush);
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
   function ensureDay() { if (!state.day || state.day.d !== todayStr()) { state.day = { d: todayStr(), done: 0, bonus: 0 }; save(); } }
 
   /* ---------- Frases ---------- */
@@ -861,7 +881,7 @@ function scoreSpeech(target, heard) {
     $('micNote').textContent = 'Toca el micrófono y habla en la misma pantalla. El navegador pide permiso la primera vez. En iPhone usa Safari con Siri y Dictado activados. Necesita internet.' + (micReason() ? ' ' + micReason() : '');
     var cn = getConn(); $('connIn').value = lsGet(CONN_KEY) || '';
     $('sheetNote').textContent = sheetErr ? ('Problema con la hoja: ' + sheetErr) : (cn ? 'Frases cargadas: ' + ITEMS.length + '. Niveles: ' + (LEVELS.join(', ') || 'ninguno') + '.' : 'Usando las ' + ITEMS.length + ' frases incluidas en la app (niveles: ' + (LEVELS.join(', ') || 'ninguno') + ').');
-    $('storeNote').textContent = cn ? 'Tu progreso se guarda en este navegador y en tu cuenta de Google. También puedes copiarlo como respaldo.' : 'Tu progreso se guarda solo en este navegador. Copia una copia de seguridad de vez en cuando, o conecta tu hoja para guardarlo en tu cuenta de Google.';
+    $('storeNote').textContent = (cn ? 'Tu progreso se guarda en este navegador y en tu cuenta de Google. También puedes copiarlo como respaldo.' : 'Tu progreso se guarda solo en este navegador, y Safari en iPhone puede borrarlo sin avisar. Conecta tu cuenta de Google (ver README) o copia una copia de seguridad de vez en cuando.') + savedInfo();
     var st = { seen: 0, learn: 0, young: 0, mature: 0, prN: 0, prS: 0 };
     Object.keys(state.cards).forEach(function (k) { var c = state.cards[k]; if (!BYID[c.r]) return; st.seen++; if (c.pr != null) { st.prN++; st.prS += c.pr; } if (c.st === 'L') st.learn++; else if (c.ivl >= 21) st.mature++; else st.young++; });
     var box = $('stats'); box.textContent = '';
@@ -885,7 +905,9 @@ function scoreSpeech(target, heard) {
   /* conexión con la hoja */
   function refreshFromSheet(cb) {
     apiGet('phrases').then(function (j) {
-      sheetErr = ''; setItems(j.rows); lsSet(CACHE_KEY, JSON.stringify(j.rows)); cb(null, j.rows.length);
+      sheetErr = '';
+      if (j.rows && j.rows.length) { setItems(j.rows); lsSet(CACHE_KEY, JSON.stringify(j.rows)); }
+      cb(null, ITEMS.length);
     }, function (e) { sheetErr = e.message; cb(e); });
   }
   $('connSave').addEventListener('click', function () {
@@ -898,7 +920,7 @@ function scoreSpeech(target, heard) {
       if (err) { note.textContent = 'No se pudo conectar: ' + err.message; syncSettings(); return; }
       note.textContent = 'Conectado. Se leyeron ' + n + ' frases.';
       apiGet('progress').then(function (j) {
-        try { if (j.data) { var p = JSON.parse(j.data); if (p && (p.t || 0) > (state.t || 0)) adopt(p); } } catch (e) {}
+        try { if (j.data) { var p = JSON.parse(j.data); if (p && (emptyState(state) || (p.t || 0) > (state.t || 0))) adopt(p); } } catch (e) {}
       }, function () {}).then(function () { save(); rebuildDeck(); syncSettings(); render(); });
     });
   });
@@ -945,7 +967,7 @@ function scoreSpeech(target, heard) {
     var left = 2, part = function () { if (--left === 0) go(); };
     setSync('Cargando…');
     apiGet('progress').then(function (j) {
-      try { if (j.data && !booted) { var p = JSON.parse(j.data); if (p && (p.t || 0) > (state.t || 0)) adopt(p); } } catch (e) {}
+      try { if (j.data && !booted) { var p = JSON.parse(j.data); if (p && (emptyState(state) || (p.t || 0) > (state.t || 0))) { adopt(p); lsSet(KEY, JSON.stringify(state)); } } } catch (e) {}
       setSync(j.data ? 'Sincronizado con tu cuenta de Google.' : '');
     }, function (e) { setSync('No se pudo leer tu progreso de Google (' + e.message + '). Usando el de este navegador.'); }).then(part);
     refreshFromSheet(function () { if (booted) { rebuildDeck(); syncSettings(); render(); } else part(); });
