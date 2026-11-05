@@ -195,6 +195,8 @@
   .stats b { font-family: var(--font-mono); font-size: 1.2rem; display: block; font-variant-numeric: tabular-nums; }
   .stats small { color: var(--muted); font-size: .75rem; }
   .small { font-size: .8rem; color: var(--muted); margin: 0; }
+  .field a { color: var(--accent); }
+  .field ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; font-size: .9rem; }
   .sep { border: 0; border-top: 1px solid var(--line); margin: 0; }
 
   html, body { margin: 0; }
@@ -203,7 +205,7 @@
   .card-top { flex-wrap: wrap; }
   .chip { max-width: 100%; overflow-wrap: anywhere; }
   .sentence { font-size: clamp(1.6rem, 6vw, 2.1rem); }
-  input[type="text"] { width: 100%; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); padding: 8px 10px; font-size: 16px; }
+  input[type="text"], input[type="password"] { width: 100%; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); padding: 8px 10px; font-size: 16px; }
 </style>
 </head>
 <body>
@@ -250,6 +252,22 @@
       <span class="lbl">Porcentaje mínimo para desbloquear</span>
       <div class="chips" id="thrChips"></div>
       <p class="small" id="micNote"></p>
+    </div>
+    <hr class="sep">
+    <div class="field">
+      <h2>Guardar con tu cuenta de GitHub</h2>
+      <p class="small" id="ghIntro">Recomendado. Tu progreso se guarda en un gist privado de tu cuenta y lo ves igual en el celular y en la computadora. No hace falta configurar nada más.</p>
+      <ol id="ghSteps">
+        <li><a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Ingl%C3%A9s%20Diario" target="_blank" rel="noopener">Crea un token</a> en GitHub con el permiso <b>gist</b> marcado.</li>
+        <li>Cópialo y pégalo aquí.</li>
+      </ol>
+      <label for="ghIn" class="small" id="ghLbl">Token de GitHub</label>
+      <input type="password" id="ghIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ghp_…">
+      <div class="row">
+        <button class="btn" id="ghSave">Conectar</button>
+        <button class="btn ghost" id="ghOff">Cerrar sesión</button>
+      </div>
+      <p class="small" id="ghNote" aria-live="polite"></p>
     </div>
     <hr class="sep">
     <div class="field">
@@ -493,6 +511,70 @@ function scoreSpeech(target, heard) {
     });
   }
 
+  /* ---------- Sesión con GitHub (gist privado) ---------- */
+  var GH_KEY = 'ingles-diario:gh', GIST_DESC = 'Inglés Diario - progreso', GIST_FILE = 'ingles-diario-progreso.json';
+  function ghGet() { try { var g = JSON.parse(lsGet(GH_KEY) || 'null'); return g && g.token && g.gist ? g : { token: '', user: '', gist: '' }; } catch (e) { return { token: '', user: '', gist: '' }; } }
+  function ghSet(g) { lsSet(GH_KEY, g && g.token ? JSON.stringify(g) : null); }
+  function ghNote(m) { var n = $('ghNote'); if (n) n.textContent = m; }
+  function ghFetch(token, path, method, body, keep) {
+    var hd = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' };
+    if (body) hd['Content-Type'] = 'application/json';
+    var txt = body ? JSON.stringify(body) : undefined;
+    return withTimeout(fetch('https://api.github.com' + path, { method: method || 'GET', headers: hd, body: txt, keepalive: !!keep && !!txt && txt.length < 60000 }).then(function (r) {
+      if (!r.ok) { var e = new Error('http ' + r.status); e.status = r.status; throw e; }
+      return r.json();
+    }), 15000);
+  }
+  function ghFail(e) { return e && e.status === 401 ? 'GitHub ya no acepta el token. Vuelve a conectar la cuenta en Ajustes.' : 'No se pudo guardar en GitHub (' + ((e && e.message) || 'error') + '). Se reintentará con el próximo cambio.'; }
+  var ghBusy = false, ghAgain = false;
+  function ghPush(keep) {
+    var g = ghGet(); if (!g.token) return;
+    if (ghBusy && !keep) { ghAgain = true; return; }
+    ghBusy = true; ghNote('Guardando en tu cuenta de GitHub…');
+    var files = {}; files[GIST_FILE] = { content: JSON.stringify(state) };
+    ghFetch(g.token, '/gists/' + g.gist, 'PATCH', { files: files }, keep).then(function () { ghNote('Guardado en tu cuenta de GitHub (' + g.user + ').'); },
+      function (e) { ghNote(ghFail(e)); }).then(function () { ghBusy = false; if (ghAgain) { ghAgain = false; ghPush(); } });
+  }
+  /* Lee el gist. Si el progreso de GitHub es más nuevo que el local, lo adopta. Devuelve true si cambió el estado. */
+  function ghPull(g) {
+    return ghFetch(g.token, '/gists/' + g.gist).then(function (j) {
+      var f = j.files && j.files[GIST_FILE];
+      if (!f || !f.content) return false;
+      var p = JSON.parse(f.content);
+      if (p && (emptyState(state) || (p.t || 0) > (state.t || 0)) && adopt(p)) { lsSet(KEY, JSON.stringify(state)); return true; }
+      return false;
+    });
+  }
+  function ghConnect(token) {
+    var tk = (token || '').trim();
+    if (!tk) { ghNote('Pega primero el token que creaste en GitHub.'); return; }
+    ghNote('Conectando…');
+    var g = { token: tk, user: '', gist: '' };
+    ghFetch(tk, '/user').then(function (me) {
+      g.user = me.login;
+      return (function find(page) {
+        return ghFetch(tk, '/gists?per_page=100&page=' + page).then(function (list) {
+          var hit = list.filter(function (x) { return x.description === GIST_DESC && x.files && x.files[GIST_FILE]; })[0];
+          if (hit || list.length < 100 || page >= 3) return hit || null;
+          return find(page + 1);
+        });
+      })(1);
+    }).then(function (hit) {
+      if (hit) { g.gist = hit.id; return ghPull(g); }
+      var files = {}; files[GIST_FILE] = { content: JSON.stringify(state) };
+      return ghFetch(tk, '/gists', 'POST', { description: GIST_DESC, public: false, files: files }).then(function (c) { g.gist = c.id; return false; });
+    }).then(function (changed) {
+      ghSet(g);
+      save(); rebuildDeck(); syncSettings(); render();
+      ghNote('Conectado como ' + g.user + (changed ? '. Se recuperó tu progreso guardado.' : '. Tu progreso se guarda en tu cuenta.'));
+    }, function (e) {
+      ghNote(e && e.status === 401 ? 'GitHub no aceptó el token. Revisa que lo hayas copiado completo.'
+        : e && (e.status === 403 || e.status === 404) ? 'El token no tiene permiso para gists. Crea uno nuevo con el permiso gist marcado.'
+        : 'No se pudo conectar con GitHub (' + ((e && e.message) || 'error') + '). Prueba de nuevo en un momento.');
+    });
+  }
+  function ghDisconnect() { ghSet(null); ghNote('Sesión cerrada. Tu progreso sigue en este navegador.'); syncSettings(); }
+
   /* ---------- Estado ---------- */
   var state = defaults(), booted = false, saveTimer = null;
   function adopt(p) {
@@ -505,6 +587,7 @@ function scoreSpeech(target, heard) {
   try { var raw = lsGet(KEY); if (raw) adopt(JSON.parse(raw)); } catch (e) {}
   function setSync(m) { var n = $('syncNote'); if (n) n.textContent = m; }
   function pushServer(keep) {
+    ghPush(keep);
     if (!getConn()) return;
     setSync('Guardando en tu cuenta de Google…');
     apiSave(JSON.stringify(state), keep).then(function () { setSync('Guardado en tu cuenta de Google.'); },
@@ -880,8 +963,11 @@ function scoreSpeech(target, heard) {
     chips($('thrChips'), [70, 80, 90], function () { return state.set.thr; }, function (v) { state.set.thr = v; save(); syncSettings(); }, function (v) { return v + '%'; });
     $('micNote').textContent = 'Toca el micrófono y habla en la misma pantalla. El navegador pide permiso la primera vez. En iPhone usa Safari con Siri y Dictado activados. Necesita internet.' + (micReason() ? ' ' + micReason() : '');
     var cn = getConn(); $('connIn').value = lsGet(CONN_KEY) || '';
+    var gg = ghGet(), on = !!gg.token;
+    $('ghSteps').hidden = on; $('ghIn').hidden = on; $('ghLbl').hidden = on; $('ghSave').hidden = on; $('ghOff').hidden = !on;
+    $('ghIntro').textContent = on ? 'Sesión iniciada como ' + gg.user + '. Tu progreso se guarda en un gist privado de tu cuenta de GitHub.' : 'Recomendado. Tu progreso se guarda en un gist privado de tu cuenta y lo ves igual en el celular y en la computadora. No hace falta configurar nada más.';
     $('sheetNote').textContent = sheetErr ? ('Problema con la hoja: ' + sheetErr) : (cn ? 'Frases cargadas: ' + ITEMS.length + '. Niveles: ' + (LEVELS.join(', ') || 'ninguno') + '.' : 'Usando las ' + ITEMS.length + ' frases incluidas en la app (niveles: ' + (LEVELS.join(', ') || 'ninguno') + ').');
-    $('storeNote').textContent = (cn ? 'Tu progreso se guarda en este navegador y en tu cuenta de Google. También puedes copiarlo como respaldo.' : 'Tu progreso se guarda solo en este navegador, y Safari en iPhone puede borrarlo sin avisar. Conecta tu cuenta de Google (ver README) o copia una copia de seguridad de vez en cuando.') + savedInfo();
+    $('storeNote').textContent = (on || cn ? 'Tu progreso se guarda en este navegador y en tu cuenta de ' + (on && cn ? 'GitHub y de Google' : on ? 'GitHub' : 'Google') + '. También puedes copiarlo como respaldo.' : 'Tu progreso se guarda solo en este navegador, y Safari en iPhone puede borrarlo sin avisar. Conecta tu cuenta de GitHub o copia una copia de seguridad de vez en cuando.') + savedInfo();
     var st = { seen: 0, learn: 0, young: 0, mature: 0, prN: 0, prS: 0 };
     Object.keys(state.cards).forEach(function (k) { var c = state.cards[k]; if (!BYID[c.r]) return; st.seen++; if (c.pr != null) { st.prN++; st.prS += c.pr; } if (c.st === 'L') st.learn++; else if (c.ivl >= 21) st.mature++; else st.young++; });
     var box = $('stats'); box.textContent = '';
@@ -901,6 +987,10 @@ function scoreSpeech(target, heard) {
   $('showCat').addEventListener('change', function (e) { state.set.showCat = e.target.checked; save(); if (current && !$('study').hidden) $('catChip').hidden = !(state.set.showCat && BYID[current.r].cat); });
   $('voice').addEventListener('change', function (e) { state.set.voice = e.target.value; save(); });
   $('req').addEventListener('change', function (e) { state.set.req = e.target.checked; save(); syncSettings(); if (current && !revealed && !$('study').hidden) buildActions(); });
+
+  $('ghSave').addEventListener('click', function () { ghConnect($('ghIn').value); });
+  $('ghIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); ghConnect($('ghIn').value); } });
+  $('ghOff').addEventListener('click', ghDisconnect);
 
   /* conexión con la hoja */
   function refreshFromSheet(cb) {
@@ -963,14 +1053,22 @@ function scoreSpeech(target, heard) {
 
   /* ---------- Arranque ---------- */
   function go() { if (booted) return; booted = true; $('loading').hidden = true; rebuildDeck(); syncSettings(); render(); }
-  if (getConn()) {
-    var left = 2, part = function () { if (--left === 0) go(); };
-    setSync('Cargando…');
-    apiGet('progress').then(function (j) {
-      try { if (j.data && !booted) { var p = JSON.parse(j.data); if (p && (emptyState(state) || (p.t || 0) > (state.t || 0))) { adopt(p); lsSet(KEY, JSON.stringify(state)); } } } catch (e) {}
-      setSync(j.data ? 'Sincronizado con tu cuenta de Google.' : '');
-    }, function (e) { setSync('No se pudo leer tu progreso de Google (' + e.message + '). Usando el de este navegador.'); }).then(part);
-    refreshFromSheet(function () { if (booted) { rebuildDeck(); syncSettings(); render(); } else part(); });
+  var gs = ghGet(), useGh = !!gs.token;
+  if (getConn() || useGh) {
+    var left = (getConn() ? 2 : 0) + (useGh ? 1 : 0), part = function () { if (--left === 0) go(); };
+    if (getConn()) {
+      setSync('Cargando…');
+      apiGet('progress').then(function (j) {
+        try { if (j.data && !booted) { var p = JSON.parse(j.data); if (p && (emptyState(state) || (p.t || 0) > (state.t || 0))) { adopt(p); lsSet(KEY, JSON.stringify(state)); } } } catch (e) {}
+        setSync(j.data ? 'Sincronizado con tu cuenta de Google.' : '');
+      }, function (e) { setSync('No se pudo leer tu progreso de Google (' + e.message + '). Usando el de este navegador.'); }).then(part);
+      refreshFromSheet(function () { if (booted) { rebuildDeck(); syncSettings(); render(); } else part(); });
+    }
+    if (useGh) {
+      ghNote('Cargando…');
+      ghPull(gs).then(function (changed) { ghNote('Sincronizado con tu cuenta de GitHub (' + gs.user + ').'); if (changed && booted) { rebuildDeck(); syncSettings(); render(); } },
+        function (e) { ghNote(e && e.status === 401 ? 'GitHub ya no acepta el token. Vuelve a conectar la cuenta en Ajustes.' : 'No se pudo leer tu progreso de GitHub (' + ((e && e.message) || 'error') + '). Usando el de este navegador.'); }).then(part);
+    }
     setTimeout(go, 10000);
   } else { go(); }
 })();

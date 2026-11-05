@@ -5,7 +5,18 @@ Tarjetas de frases con repetición espaciada. Tu progreso es solo tuyo.
 ## Dónde se guarda tu progreso
 
 - **Sin configurar nada:** solo en el navegador de ese dispositivo (`localStorage`). En iPhone, Safari puede borrarlo si no abres el sitio en ~7 días o si falta espacio. Por eso conviene el paso siguiente.
-- **Con tu cuenta de Google (recomendado):** el progreso se guarda además en un archivo `ingles-diario-progreso.json` en **tu** Google Drive. Si Safari borra sus datos, al abrir la app se recupera solo.
+- **Con tu cuenta de GitHub (recomendado, 1 minuto):** el progreso se guarda además en un gist privado de tu cuenta. Ver la sección siguiente.
+- **Con tu cuenta de Google:** el progreso se guarda además en un archivo `ingles-diario-progreso.json` en **tu** Google Drive. Si Safari borra sus datos, al abrir la app se recupera solo.
+
+## Guardar el progreso con tu cuenta de GitHub
+
+1. En la app, abre **Ajustes** y busca **Guardar con tu cuenta de GitHub**.
+2. Toca **Crea un token**. Se abre GitHub con el permiso `gist` ya marcado. Genera el token y cópialo.
+3. Pégalo en la app y toca **Conectar**.
+
+La app crea un gist privado llamado `ingles-diario-progreso.json` y lo mantiene sincronizado. Si cambias de teléfono o Safari borra los datos, repite los pasos 1 a 3 y tu historial vuelve. El token queda solo en ese navegador y la app lo usa únicamente para leer y escribir ese gist. No lo compartas.
+
+Esta opción solo guarda el progreso. Las frases siguen siendo las incluidas en la app, o las de tu hoja si conectas Apps Script. Puedes usar GitHub y Google a la vez.
 
 ## Conectar tu cuenta de Google (una sola vez, ~5 minutos)
 
