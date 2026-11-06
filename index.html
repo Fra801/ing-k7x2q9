@@ -70,23 +70,23 @@
 
   .wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
 
-  /* Header */
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  h1 { margin: 0; font-size: 1.15rem; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; }
-  h1 span { color: var(--accent); }
-  .icon-btn {
-    width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
-    background: var(--surface); display: grid; place-items: center;
-  }
-  .icon-btn[aria-expanded="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  /* Header: marca + cuenta + contadores, y debajo las pestañas (misma estructura que Repaso JS) */
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+  .brand { margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: -.01em; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .brand span { color: var(--accent); }
+  .brand small { font-family: var(--font-mono); font-size: .78rem; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+  .acct { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; min-height: 32px; font-size: .9rem; font-weight: 600; color: var(--muted); }
+  .acct.on { color: var(--good); border-color: var(--good); }
+  .counts { display: flex; gap: 14px; font-variant-numeric: tabular-nums; font-size: .95rem; font-weight: 600; flex-basis: 100%; }
+  .counts span { display: inline-flex; gap: 5px; align-items: baseline; color: var(--muted); font-weight: 500; }
+  .counts b { font-family: var(--font-mono); font-size: 1.1rem; }
+  .counts .c-new b { color: var(--easy); }
+  .counts .c-learn b { color: var(--hard); }
+  .counts .c-rev b { color: var(--good); }
 
-  .counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .count { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
-  .count b { display: block; font-family: var(--font-mono); font-size: 1.4rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .count small { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
-  .count.n b { color: var(--easy); }
-  .count.l b { color: var(--hard); }
-  .count.r b { color: var(--good); }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  .tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 14px; margin-bottom: -1px; color: var(--muted); font-weight: 600; min-height: 44px; }
+  .tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
 
   .progress { display: flex; flex-direction: column; gap: 6px; }
   .progress-line { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -210,14 +210,38 @@
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>Inglés <span>diario</span></h1>
-    <button class="icon-btn" id="gear" aria-expanded="false" aria-controls="settings" aria-label="Ajustes">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-    </button>
+  <header class="top">
+    <h1 class="brand">Inglés <span>diario</span> <small>repetición espaciada</small></h1>
+    <button class="acct" id="acct" type="button">Iniciar sesión</button>
+    <div class="counts" aria-label="Pendientes de hoy">
+      <span class="c-new"><b id="cNew">0</b> nuevas</span>
+      <span class="c-learn"><b id="cLearn">0</b> aprender</span>
+      <span class="c-rev"><b id="cRev">0</b> repasar</span>
+    </div>
   </header>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabStudy" aria-selected="true">Estudiar</button>
+    <button class="tab" role="tab" id="tabSettings" aria-selected="false" aria-controls="settings">Ajustes</button>
+  </nav>
 
   <section class="settings" id="settings" hidden>
+    <div class="field" id="account">
+      <h2>Cuenta de GitHub</h2>
+      <p class="small" id="ghIntro">Inicia sesión solo con un token de GitHub. Tu progreso se guarda en un gist privado de tu cuenta y lo ves igual en el celular y en la computadora.</p>
+      <ol id="ghSteps">
+        <li><a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Ingl%C3%A9s%20Diario" target="_blank" rel="noopener">Crea un token</a> en GitHub con el permiso <b>gist</b> marcado.</li>
+        <li>Cópialo y pégalo aquí.</li>
+      </ol>
+      <label for="ghIn" class="small" id="ghLbl">Token de GitHub</label>
+      <input type="password" id="ghIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ghp_…">
+      <div class="row">
+        <button class="btn" id="ghSave">Iniciar sesión</button>
+        <button class="btn ghost" id="ghOff">Cerrar sesión</button>
+      </div>
+      <p class="small" id="ghNote" aria-live="polite"></p>
+      <p class="small">El token queda solo en este navegador. La app lo usa únicamente para leer y escribir un gist privado con tu progreso.</p>
+    </div>
+    <hr class="sep">
     <div class="field">
       <h2>Nivel</h2>
       <div class="chips" id="lvlChips"></div>
@@ -255,39 +279,9 @@
     </div>
     <hr class="sep">
     <div class="field">
-      <h2>Guardar con tu cuenta de GitHub</h2>
-      <p class="small" id="ghIntro">Recomendado. Tu progreso se guarda en un gist privado de tu cuenta y lo ves igual en el celular y en la computadora. No hace falta configurar nada más.</p>
-      <ol id="ghSteps">
-        <li><a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Ingl%C3%A9s%20Diario" target="_blank" rel="noopener">Crea un token</a> en GitHub con el permiso <b>gist</b> marcado.</li>
-        <li>Cópialo y pégalo aquí.</li>
-      </ol>
-      <label for="ghIn" class="small" id="ghLbl">Token de GitHub</label>
-      <input type="password" id="ghIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ghp_…">
-      <div class="row">
-        <button class="btn" id="ghSave">Conectar</button>
-        <button class="btn ghost" id="ghOff">Cerrar sesión</button>
-      </div>
-      <p class="small" id="ghNote" aria-live="polite"></p>
-    </div>
-    <hr class="sep">
-    <div class="field">
-      <h2>Conexión con tu hoja</h2>
-      <p class="small">Opcional. Pega la dirección de tu aplicación web de Apps Script seguida de <b>?key=</b> y tu clave. Así tus frases se leen de tu hoja y tu progreso se guarda en tu cuenta de Google.</p>
-      <label for="connIn" class="small">Dirección con clave</label>
-      <input type="text" id="connIn" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec?key=…">
-      <div class="row">
-        <button class="btn" id="connSave">Guardar y probar</button>
-        <button class="btn ghost" id="connOff">Desconectar</button>
-      </div>
-      <p class="small" id="connNote" aria-live="polite"></p>
-      <p class="small" id="sheetNote"></p>
-    </div>
-    <hr class="sep">
-    <div class="field">
       <h2>Tu progreso</h2>
       <div class="stats" id="stats"></div>
       <p class="small" id="storeNote"></p>
-      <p class="small" id="syncNote" aria-live="polite"></p>
       <div class="row">
         <button class="btn ghost" id="copyBtn">Copiar progreso</button>
         <button class="btn ghost" id="restoreBtn">Restaurar</button>
@@ -300,12 +294,7 @@
     </div>
   </section>
 
-  <div class="counts" aria-label="Tarjetas de hoy">
-    <div class="count n"><b id="cNew">0</b><small>Nuevas</small></div>
-    <div class="count l"><b id="cLearn">0</b><small>Aprendiendo</small></div>
-    <div class="count r"><b id="cRev">0</b><small>Repasar</small></div>
-  </div>
-
+  <div id="studyView">
   <div class="progress">
     <div class="progress-line"><span id="pLabel"></span><span id="pPct"></span></div>
     <div class="bar"><i id="pBar"></i></div>
@@ -345,6 +334,7 @@
   </section>
 
   <section class="done" id="done" hidden></section>
+  </div>
 </div>
 
 <script>
@@ -472,42 +462,18 @@ function scoreSpeech(target, heard) {
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); return true; } catch (e) { return false; } }
-  /* Si la dirección del acceso directo termina en #conn=<URL de Apps Script con ?key=...>, la conexión se restaura sola aunque Safari haya borrado los datos. */
-  try { var cm = /^#conn=(.+)$/.exec(location.hash); if (cm) lsSet(CONN_KEY, decodeURIComponent(cm[1])); } catch (e) {}
+  /* La conexión con Google (Apps Script) ya no existe: se borran sus datos viejos. El inicio de sesión es solo con el token de GitHub. */
+  lsSet(CONN_KEY, null); lsSet(CACHE_KEY, null);
   function emptyState(s) { return !s || !s.cards || Object.keys(s.cards).length === 0; }
   function todayStr() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function defaults() {
     return { seed: Math.floor(Math.random() * 2147483647), set: { lvl: 'A1', n: 100000, perDay: 10, auto: true, voice: '', req: true, thr: 80, showCat: false }, cards: {}, day: { d: todayStr(), done: 0, bonus: 0 } };
   }
 
-  /* ---------- Conexión opcional con Apps Script ---------- */
-  function getConn() {
-    var s = lsGet(CONN_KEY); if (!s) return null;
-    try {
-      var u = new URL(s.trim());
-      if (u.origin !== 'https://script.google.com' || u.pathname.indexOf('/macros/') !== 0) return null;
-      var key = u.searchParams.get('key'); if (!key) return null;
-      return { base: u.origin + u.pathname, key: key };
-    } catch (e) { return null; }
-  }
   function withTimeout(p, ms) {
     return new Promise(function (res, rej) {
       var t = setTimeout(function () { rej(new Error('tiempo agotado')); }, ms);
       p.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); });
-    });
-  }
-  function apiGet(action) {
-    var c = getConn(); if (!c) return Promise.reject(new Error('sin conexión configurada'));
-    return withTimeout(fetch(c.base + '?action=' + action + '&key=' + encodeURIComponent(c.key)).then(function (r) { return r.json(); }), 9000).then(function (j) {
-      if (!j || !j.ok) throw new Error(j && j.error === 'clave' ? 'La clave no coincide con la de Code.gs.' : ((j && j.error) || 'respuesta inválida'));
-      return j;
-    });
-  }
-  function apiSave(text, keep) {
-    var c = getConn(); if (!c) return Promise.reject(new Error('sin conexión'));
-    var body = JSON.stringify({ key: c.key, action: 'save', data: text });
-    return withTimeout(fetch(c.base, { method: 'POST', keepalive: !!keep && body.length < 60000, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body }).then(function (r) { return r.json(); }), 12000).then(function (j) {
-      if (!j || !j.ok) throw new Error((j && j.error) || 'respuesta inválida');
     });
   }
 
@@ -525,7 +491,7 @@ function scoreSpeech(target, heard) {
       return r.json();
     }), 15000);
   }
-  function ghFail(e) { return e && e.status === 401 ? 'GitHub ya no acepta el token. Vuelve a conectar la cuenta en Ajustes.' : 'No se pudo guardar en GitHub (' + ((e && e.message) || 'error') + '). Se reintentará con el próximo cambio.'; }
+  function ghFail(e) { return e && e.status === 401 ? 'GitHub ya no acepta el token. Vuelve a iniciar sesión en Ajustes.' : 'No se pudo guardar en GitHub (' + ((e && e.message) || 'error') + '). Se reintentará con el próximo cambio.'; }
   var ghBusy = false, ghAgain = false;
   function ghPush(keep) {
     var g = ghGet(); if (!g.token) return;
@@ -585,14 +551,7 @@ function scoreSpeech(target, heard) {
     return true;
   }
   try { var raw = lsGet(KEY); if (raw) adopt(JSON.parse(raw)); } catch (e) {}
-  function setSync(m) { var n = $('syncNote'); if (n) n.textContent = m; }
-  function pushServer(keep) {
-    ghPush(keep);
-    if (!getConn()) return;
-    setSync('Guardando en tu cuenta de Google…');
-    apiSave(JSON.stringify(state), keep).then(function () { setSync('Guardado en tu cuenta de Google.'); },
-      function (e) { setSync('No se pudo guardar en Google (' + e.message + '). Se reintentará con el próximo cambio.'); });
-  }
+  function pushServer(keep) { ghPush(keep); }
   var lastSaved = 0;
   function savedInfo() {
     if (!lastSaved) return '';
@@ -618,7 +577,7 @@ function scoreSpeech(target, heard) {
   function ensureDay() { if (!state.day || state.day.d !== todayStr()) { state.day = { d: todayStr(), done: 0, bonus: 0 }; save(); } }
 
   /* ---------- Frases ---------- */
-  var ITEMS = [], BYID = {}, LEVELS = [], POOL = [], DECK = [], DECKSET = {}, sheetErr = '';
+  var ITEMS = [], BYID = {}, LEVELS = [], POOL = [], DECK = [], DECKSET = {};
   function hid(s) {
     s = String(s).toLowerCase().replace(/\s+/g, ' ').trim();
     var h1 = 5381, h2 = 0;
@@ -656,8 +615,7 @@ function scoreSpeech(target, heard) {
     DECK = seenIt.concat(fresh.slice(0, take)); DECKSET = {};
     DECK.forEach(function (it) { DECKSET[it.id] = 1; });
   }
-  function readCache() { try { var c = JSON.parse(lsGet(CACHE_KEY) || 'null'); return c && c.length ? c : null; } catch (e) { return null; } }
-  function loadInitialItems() { setItems(readCache() || EMBED); }
+  function loadInitialItems() { setItems(EMBED); }
   loadInitialItems();
 
   /* ---------- Audio ---------- */
@@ -861,7 +819,7 @@ function scoreSpeech(target, heard) {
 
   function render() {
     ensureDay(); updateTop();
-    if (!ITEMS.length) { showEmpty('No hay frases cargadas. Revisa la conexión con tu hoja en Ajustes.'); return; }
+    if (!ITEMS.length) { showEmpty('No hay frases cargadas en la app.'); return; }
     if (!DECK.length) { showEmpty('No hay frases para el nivel elegido. Cambia el nivel en Ajustes.'); return; }
     current = pickNext(Date.now());
     if (!current) { showDone(); return; }
@@ -962,12 +920,11 @@ function scoreSpeech(target, heard) {
     $('auto').checked = !!state.set.auto; $('req').checked = !!state.set.req; $('showCat').checked = !!state.set.showCat;
     chips($('thrChips'), [70, 80, 90], function () { return state.set.thr; }, function (v) { state.set.thr = v; save(); syncSettings(); }, function (v) { return v + '%'; });
     $('micNote').textContent = 'Toca el micrófono y habla en la misma pantalla. El navegador pide permiso la primera vez. En iPhone usa Safari con Siri y Dictado activados. Necesita internet.' + (micReason() ? ' ' + micReason() : '');
-    var cn = getConn(); $('connIn').value = lsGet(CONN_KEY) || '';
     var gg = ghGet(), on = !!gg.token;
     $('ghSteps').hidden = on; $('ghIn').hidden = on; $('ghLbl').hidden = on; $('ghSave').hidden = on; $('ghOff').hidden = !on;
-    $('ghIntro').textContent = on ? 'Sesión iniciada como ' + gg.user + '. Tu progreso se guarda en un gist privado de tu cuenta de GitHub.' : 'Recomendado. Tu progreso se guarda en un gist privado de tu cuenta y lo ves igual en el celular y en la computadora. No hace falta configurar nada más.';
-    $('sheetNote').textContent = sheetErr ? ('Problema con la hoja: ' + sheetErr) : (cn ? 'Frases cargadas: ' + ITEMS.length + '. Niveles: ' + (LEVELS.join(', ') || 'ninguno') + '.' : 'Usando las ' + ITEMS.length + ' frases incluidas en la app (niveles: ' + (LEVELS.join(', ') || 'ninguno') + ').');
-    $('storeNote').textContent = (on || cn ? 'Tu progreso se guarda en este navegador y en tu cuenta de ' + (on && cn ? 'GitHub y de Google' : on ? 'GitHub' : 'Google') + '. También puedes copiarlo como respaldo.' : 'Tu progreso se guarda solo en este navegador, y Safari en iPhone puede borrarlo sin avisar. Conecta tu cuenta de GitHub o copia una copia de seguridad de vez en cuando.') + savedInfo();
+    $('ghIntro').textContent = on ? 'Sesión iniciada como ' + gg.user + '. Tu progreso se guarda en un gist privado de tu cuenta de GitHub.' : 'Inicia sesión solo con un token de GitHub. Tu progreso se guarda en un gist privado de tu cuenta y lo ves igual en el celular y en la computadora.';
+    var ac = $('acct'); ac.classList.toggle('on', on); ac.textContent = on ? '● ' + gg.user : 'Iniciar sesión';
+    $('storeNote').textContent = (on ? 'Tu progreso se guarda en este navegador y en tu cuenta de GitHub. También puedes copiarlo como respaldo.' : 'Tu progreso se guarda solo en este navegador, y Safari en iPhone puede borrarlo sin avisar. Inicia sesión con tu token de GitHub o copia una copia de seguridad de vez en cuando.') + savedInfo();
     var st = { seen: 0, learn: 0, young: 0, mature: 0, prN: 0, prS: 0 };
     Object.keys(state.cards).forEach(function (k) { var c = state.cards[k]; if (!BYID[c.r]) return; st.seen++; if (c.pr != null) { st.prN++; st.prS += c.pr; } if (c.st === 'L') st.learn++; else if (c.ivl >= 21) st.mature++; else st.young++; });
     var box = $('stats'); box.textContent = '';
@@ -976,11 +933,14 @@ function scoreSpeech(target, heard) {
       b.textContent = x[1]; s.textContent = x[0]; d.appendChild(b); d.appendChild(s); box.appendChild(d);
     });
   }
-  function setSettings(open) {
-    $('settings').hidden = !open; $('gear').setAttribute('aria-expanded', String(open));
-    if (open) { syncSettings(); $('settings').scrollIntoView({ block: 'start' }); }
+  function setSettings(open, toAccount) {
+    $('settings').hidden = !open; $('studyView').hidden = open;
+    $('tabSettings').setAttribute('aria-selected', String(open)); $('tabStudy').setAttribute('aria-selected', String(!open));
+    if (open) { syncSettings(); (toAccount ? $('account') : $('settings')).scrollIntoView({ block: 'start' }); }
   }
-  $('gear').addEventListener('click', function () { setSettings($('settings').hidden); });
+  $('tabStudy').addEventListener('click', function () { setSettings(false); });
+  $('tabSettings').addEventListener('click', function () { setSettings(true); });
+  $('acct').addEventListener('click', function () { setSettings(true, true); });
   $('nRange').addEventListener('input', function (e) { state.set.n = +e.target.value; $('nOut').textContent = state.set.n; });
   $('nRange').addEventListener('change', function () { save(); rebuildDeck(); syncSettings(); render(); });
   $('auto').addEventListener('change', function (e) { state.set.auto = e.target.checked; save(); });
@@ -991,33 +951,6 @@ function scoreSpeech(target, heard) {
   $('ghSave').addEventListener('click', function () { ghConnect($('ghIn').value); });
   $('ghIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); ghConnect($('ghIn').value); } });
   $('ghOff').addEventListener('click', ghDisconnect);
-
-  /* conexión con la hoja */
-  function refreshFromSheet(cb) {
-    apiGet('phrases').then(function (j) {
-      sheetErr = '';
-      if (j.rows && j.rows.length) { setItems(j.rows); lsSet(CACHE_KEY, JSON.stringify(j.rows)); }
-      cb(null, ITEMS.length);
-    }, function (e) { sheetErr = e.message; cb(e); });
-  }
-  $('connSave').addEventListener('click', function () {
-    var v = $('connIn').value.trim(), note = $('connNote');
-    if (!v) { note.textContent = 'Pega primero la dirección con la clave.'; return; }
-    lsSet(CONN_KEY, v);
-    if (!getConn()) { lsSet(CONN_KEY, null); note.textContent = 'La dirección debe empezar con https://script.google.com/macros/ y terminar con ?key= y tu clave.'; return; }
-    note.textContent = 'Probando la conexión…';
-    refreshFromSheet(function (err, n) {
-      if (err) { note.textContent = 'No se pudo conectar: ' + err.message; syncSettings(); return; }
-      note.textContent = 'Conectado. Se leyeron ' + n + ' frases.';
-      apiGet('progress').then(function (j) {
-        try { if (j.data) { var p = JSON.parse(j.data); if (p && (emptyState(state) || (p.t || 0) > (state.t || 0))) adopt(p); } } catch (e) {}
-      }, function () {}).then(function () { save(); rebuildDeck(); syncSettings(); render(); });
-    });
-  });
-  $('connOff').addEventListener('click', function () {
-    lsSet(CONN_KEY, null); lsSet(CACHE_KEY, null); sheetErr = ''; loadInitialItems(); rebuildDeck();
-    $('connNote').textContent = 'Desconectado. Se usan las frases incluidas en la app.'; syncSettings(); render();
-  });
 
   $('copyBtn').addEventListener('click', function () {
     var txt = JSON.stringify(state), ta = $('backup'); ta.value = txt;
@@ -1053,22 +986,11 @@ function scoreSpeech(target, heard) {
 
   /* ---------- Arranque ---------- */
   function go() { if (booted) return; booted = true; $('loading').hidden = true; rebuildDeck(); syncSettings(); render(); }
-  var gs = ghGet(), useGh = !!gs.token;
-  if (getConn() || useGh) {
-    var left = (getConn() ? 2 : 0) + (useGh ? 1 : 0), part = function () { if (--left === 0) go(); };
-    if (getConn()) {
-      setSync('Cargando…');
-      apiGet('progress').then(function (j) {
-        try { if (j.data && !booted) { var p = JSON.parse(j.data); if (p && (emptyState(state) || (p.t || 0) > (state.t || 0))) { adopt(p); lsSet(KEY, JSON.stringify(state)); } } } catch (e) {}
-        setSync(j.data ? 'Sincronizado con tu cuenta de Google.' : '');
-      }, function (e) { setSync('No se pudo leer tu progreso de Google (' + e.message + '). Usando el de este navegador.'); }).then(part);
-      refreshFromSheet(function () { if (booted) { rebuildDeck(); syncSettings(); render(); } else part(); });
-    }
-    if (useGh) {
-      ghNote('Cargando…');
-      ghPull(gs).then(function (changed) { ghNote('Sincronizado con tu cuenta de GitHub (' + gs.user + ').'); if (changed && booted) { rebuildDeck(); syncSettings(); render(); } },
-        function (e) { ghNote(e && e.status === 401 ? 'GitHub ya no acepta el token. Vuelve a conectar la cuenta en Ajustes.' : 'No se pudo leer tu progreso de GitHub (' + ((e && e.message) || 'error') + '). Usando el de este navegador.'); }).then(part);
-    }
+  var gs = ghGet();
+  if (gs.token) {
+    ghNote('Cargando…');
+    ghPull(gs).then(function (changed) { ghNote('Sincronizado con tu cuenta de GitHub (' + gs.user + ').'); if (changed && booted) { rebuildDeck(); syncSettings(); render(); } },
+      function (e) { ghNote(e && e.status === 401 ? 'GitHub ya no acepta el token. Vuelve a iniciar sesión en Ajustes.' : 'No se pudo leer tu progreso de GitHub (' + ((e && e.message) || 'error') + '). Usando el de este navegador.'); }).then(go);
     setTimeout(go, 10000);
   } else { go(); }
 })();
